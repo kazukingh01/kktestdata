@@ -6,6 +6,7 @@ description = "Dataset formatting helpers for evaluation data across pandas/nump
 dependencies = [
     'kklogger @ git+https://github.com/kazukingh01/kklogger.git@f6ddcc099da0102a14a62d67bede1b1c30eaf839',
     'pandas==2.2.3',
+    'polars==1.18.0',
     'numpy==2.2.1',
     'requests==2.32.5',
     'openml==0.15.1',
@@ -25,4 +26,4 @@ requires = ["setuptools>=64.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["kktestdata", "kktestdata.config", "kktestdata.datasets"]
+packages = ["kktestdata", "kktestdata.datasets"]

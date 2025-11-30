@@ -1,10 +1,11 @@
 import re
 from dataclasses import dataclass
-from typing import Any
-import pandas as pd
-import numpy as np
-import polars as pl
-import torch
+from typing import Any, TYPE_CHECKING
+if TYPE_CHECKING:
+    import pandas as pd
+    import numpy as np
+    import polars as pl
+    import torch
 from kklogger import set_logger
 
 
@@ -14,7 +15,7 @@ ALLOWED_TASKS = {"binary", "multiclass", "regression", "rank"}
 ALLOWED_FORMATS = {"pandas", "numpy", "polars", "torch", "dataloader"}
 ALLOWED_STRATEGIES_BASE = {"none", "mean", "median"}
 OPTION_STRATEGY_PATTERN = re.compile(r"^option\d+$")
-REVISION_PATTERN = re.compile(r"^[A-Za-z0-9_-\.]+$")
+REVISION_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 class DatasetError(Exception):
@@ -125,7 +126,7 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {format}")
     
-    def load_pandas(self) -> pd.DataFrame:
+    def load_pandas(self) -> "pd.DataFrame":
         if self.metadata.supported_formats.contains("pandas"):
             ins = self._load_pandas()
             assert isinstance(ins, pd.DataFrame)
@@ -133,11 +134,11 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_pandas(self) -> pd.DataFrame:
+    def _load_pandas(self) -> "pd.DataFrame":
         if self.metadata.supported_formats.contains("pandas"):
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
-    def load_numpy(self) -> np.ndarray:
+    def load_numpy(self) -> "np.ndarray":
         if self.metadata.supported_formats.contains("numpy"):
             ins = self._load_numpy()
             assert isinstance(ins, tuple | list) and len(ins) == 2
@@ -146,11 +147,11 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_numpy(self) -> np.ndarray:
+    def _load_numpy(self) -> "np.ndarray":
         if self.metadata.supported_formats.contains("numpy"):
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
-    def load_polars(self) -> pl.DataFrame:
+    def load_polars(self) -> "pl.DataFrame":
         if self.metadata.supported_formats.contains("polars"):
             ins = self._load_polars()
             assert isinstance(ins, pl.DataFrame)
@@ -158,11 +159,11 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_polars(self) -> pl.DataFrame:
+    def _load_polars(self) -> "pl.DataFrame":
         if self.metadata.supported_formats.contains("polars"):
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
-    def load_torch(self) -> torch.Tensor:
+    def load_torch(self) -> "torch.Tensor":
         if self.metadata.supported_formats.contains("torch"):
             ins = self._load_torch()
             assert isinstance(ins, tuple | list) and len(ins) == 2
@@ -171,11 +172,11 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_torch(self) -> torch.Tensor:
+    def _load_torch(self) -> "torch.Tensor":
         if self.metadata.supported_formats.contains("torch"):
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
-    def load_dataloader(self) -> torch.utils.data.DataLoader:
+    def load_dataloader(self) -> "torch.utils.data.DataLoader":
         if self.metadata.supported_formats.contains("dataloader"):
             ins = self._load_dataloader()
             assert isinstance(ins, torch.utils.data.DataLoader)
@@ -183,7 +184,7 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_dataloader(self) -> torch.utils.data.DataLoader:
+    def _load_dataloader(self) -> "torch.utils.data.DataLoader":
         if self.metadata.supported_formats.contains("dataloader"):
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
