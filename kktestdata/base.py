@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -58,7 +56,7 @@ class DatasetMetadata:
     supported_tasks: tuple[str, ...]  # binary | multiclass | regression | rank
     columns_target: str | int | list[str | int]
     columns_feature: tuple[str, ...]
-    strategy: str
+    strategy: str | list[str] | None = None
     label_mapping: dict[str, int] | None = None
     revision: str = "v1.0.0"
     cache_root: str = f"~/.cache/{__package__}"
@@ -87,7 +85,15 @@ class BaseDataset:
         assert set(meta.supported_formats).issubset(ALLOWED_FORMATS)
         assert isinstance(meta.supported_tasks, tuple) and len(meta.supported_tasks) > 0
         assert set(meta.supported_tasks).issubset(ALLOWED_TASKS)
-        assert isinstance(meta.strategy, str) and _is_valid_strategy(meta.strategy)
+        if meta.strategy is not None:
+            if isinstance(meta.strategy, str):
+                assert _is_valid_strategy(meta.strategy)
+                assert getattr(self, f"strategy_{meta.strategy}") is not None
+            else:
+                assert isinstance(meta.strategy, (list, tuple)) and len(meta.strategy) > 0
+                for x in meta.strategy:
+                    assert isinstance(x, str) and _is_valid_strategy(x)
+                    assert getattr(self, f"strategy_{meta.strategy}") is not None
         assert isinstance(meta.columns_target, (str, int, list))
         assert isinstance(meta.columns_feature, tuple) and len(meta.columns_feature) > 0
         assert all(isinstance(x, str) and x for x in meta.columns_feature)
@@ -101,8 +107,10 @@ class BaseDataset:
         assert isinstance(meta.revision, str) and REVISION_PATTERN.match(meta.revision)
         assert isinstance(meta.cache_root, str) and meta.cache_root
     
-    def load_data(self, format: str) -> Any:
-        assert isinstance(format, str) and format
+    def load_data(self, format: str | None = None) -> Any:
+        assert format is None or isinstance(format, str) and format
+        if format is None:
+            format = self.metadata.supported_formats[0]
         assert format in self.metadata.supported_formats
         if format == "pandas":
             return self.load_pandas()
