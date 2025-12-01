@@ -138,7 +138,10 @@ class DatasetRegistry:
         candidates = [
             obj
             for obj in module.__dict__.values()
-            if isclass(obj) and issubclass(obj, BaseDataset) and obj is not BaseDataset
+            if isclass(obj)
+            and issubclass(obj, BaseDataset)
+            and obj is not BaseDataset
+            and obj.__module__ == module.__name__
         ]
         if not candidates:
             raise DatasetError(f"No BaseDataset subclass found in module {module.__name__}")

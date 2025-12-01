@@ -7,16 +7,11 @@ if TYPE_CHECKING:
     import polars as pl
     import torch
 from kklogger import set_logger
-
-
-ALLOWED_SOURCE_TYPES = {"openml"}
-ALLOWED_DATA_TYPES = {"tabular", "image", "language"}
-ALLOWED_TASKS = {"binary", "multiclass", "regression", "rank"}
-ALLOWED_FORMATS = {"pandas", "numpy", "polars", "torch", "dataloader"}
-ALLOWED_STRATEGIES_BASE = {"none", "mean", "median"}
-OPTION_STRATEGY_PATTERN = re.compile(r"^option\d+$")
-REVISION_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
-
+from .check import (
+    check_source_type, check_data_type, check_strategy, check_supported_formats,
+    check_supported_task, check_columns_target, check_columns_feature, check_label_mapping_target,
+    check_label_mapping_feature, check_revision, check_cache_root
+)
 
 class DatasetError(Exception):
     pass
@@ -34,16 +29,16 @@ class DatasetMetadata:
     source_type: str
     data_type: str  # tabular | image | language
     supported_formats: tuple[str, ...] # pandas, numpy, polars, torch, dataloader
-    supported_tasks: tuple[str, ...]  # binary | multiclass | regression | rank
+    supported_task: str  # binary | multiclass | regression | rank
     columns_target: str | list[str] | None = None
     columns_feature: list[str] | None = None
+    columns_is_null: dict[str | int, bool] | None = None
     strategy: str | list[str] | None = None
     label_mapping_target:  dict[str | int, int | dict[str, int]] = None # {feature_name | index: {label: index}}
     label_mapping_feature: dict[str | int,       dict[str, int]] = None # {feature_name | index: {label: index}}
     source_options: dict[str, Any] | None = None
     revision: str = "v1.0.0"
     cache_root: str = f"~/.cache/{__package__}"
-
 
 class BaseDataset:
     metadata: DatasetMetadata
@@ -54,84 +49,23 @@ class BaseDataset:
         self.logger = set_logger(f"{__package__}.{metadata.name}")
 
     def _validate_metadata(self):
-        def _is_valid_strategy(strategy: str) -> bool:
-            if strategy in ALLOWED_STRATEGIES_BASE:
-                return True
-            return bool(OPTION_STRATEGY_PATTERN.match(strategy))
-        meta = self.metadata
-        assert isinstance(meta.name, str) and meta.name
-        assert isinstance(meta.description, str) and meta.description
-        assert meta.source_type in ALLOWED_SOURCE_TYPES
-        if meta.source_type == "openml":
-            assert meta.source_options is None or isinstance(meta.source_options, dict)
-            if isinstance(meta.source_options, dict):
-                assert all(isinstance(k, str) and k for k in meta.source_options)
-        else:
-            assert isinstance(meta.source_options, dict)
-        assert meta.data_type in ALLOWED_DATA_TYPES
-        assert isinstance(meta.supported_formats, tuple) and len(meta.supported_formats) > 0
-        assert all(isinstance(x, str) and x for x in meta.supported_formats)
-        assert set(meta.supported_formats).issubset(ALLOWED_FORMATS)
-        assert isinstance(meta.supported_tasks, tuple) and len(meta.supported_tasks) > 0
-        assert set(meta.supported_tasks).issubset(ALLOWED_TASKS)
-        # strategy
-        if meta.strategy is not None:
-            strategy_names: list[str]
-            if isinstance(meta.strategy, str):
-                strategy_names = [meta.strategy]
-            else:
-                assert isinstance(meta.strategy, (list, tuple)) and len(meta.strategy) > 0
-                strategy_names = list(meta.strategy)
-            for strategy_name in strategy_names:
-                assert isinstance(strategy_name, str) and _is_valid_strategy(strategy_name)
-                # ensure strategy handler exists while avoiding AttributeError
-                assert getattr(self, f"strategy_{strategy_name}", None) is not None
-        # columns_target
-        assert meta.columns_target  is None or (isinstance(meta.columns_target,  (str, list, tuple)))
-        if isinstance(meta.columns_target, (list, tuple)):
-            assert len(meta.columns_target) > 0
-            assert all(isinstance(x, str) and x for x in meta.columns_target)
-        # columns_feature
-        assert meta.columns_feature is None or (isinstance(meta.columns_feature, (list, tuple)))
-        if meta.columns_feature is not None:
-            assert len(meta.columns_feature) > 0
-            assert all(isinstance(x, str) and x for x in meta.columns_feature)
-            if meta.columns_target is not None:
-                if isinstance(meta.columns_target, str):
-                    assert meta.columns_target not in meta.columns_feature
-                else:
-                    assert all(x not in meta.columns_target for x in meta.columns_feature)
-        # label_mapping_target
-        assert isinstance(meta.label_mapping_target, dict)
-        if len(meta.label_mapping_target) > 0:
-            # {label: label_index} or {feature_name | index: {label: label_index}}
-            for x, y in meta.label_mapping_target.items():
-                assert isinstance(x, (str, int))
-                if isinstance(x, int):
-                    assert isinstance(y, dict) # pattern: {target_index: {label: label_index}}
-                    for a, b in y.items():
-                        assert isinstance(a, str) and isinstance(b, int)
-                else:
-                    assert isinstance(y, (int, dict))
-                    if isinstance(y, int):
-                        assert isinstance(y, int) # pattern: {label: label_index}
-                    else:
-                        assert x in meta.columns_target
-                        for a, b in y.items():
-                            assert isinstance(a, str) and isinstance(b, int)
-        # label_mapping_feature
-        assert isinstance(meta.label_mapping_feature, dict)
-        if len(meta.label_mapping_feature) > 0:
-            # pattern: {feature_name | index: {label: label_index}}
-            for x, y in meta.label_mapping_feature.items():
-                assert isinstance(x, (str, int))
-                if isinstance(x, str):
-                    assert x in meta.columns_feature
-                assert isinstance(y, dict)
-                for a, b in y.items():
-                    assert isinstance(a, str) and isinstance(b, int)
-        assert isinstance(meta.revision, str) and REVISION_PATTERN.match(meta.revision)
-        assert isinstance(meta.cache_root, str) and meta.cache_root
+        assert isinstance(self.metadata.name,        str) and self.metadata.name
+        assert isinstance(self.metadata.description, str) and self.metadata.description
+        check_source_type(self.metadata.source_type, source_options=self.metadata.source_options)
+        check_data_type(self.metadata.data_type)
+        check_supported_formats(self.metadata.supported_formats)
+        check_supported_task(self.metadata.supported_task, columns_target=self.metadata.columns_target)
+        check_strategy(self.metadata.strategy, instance=self)
+        if self.metadata.columns_target is not None:
+            check_columns_target( self.metadata.columns_target)
+        if self.metadata.columns_feature is not None:
+            check_columns_feature(self.metadata.columns_feature, columns_target=self.metadata.columns_target)
+        if self.metadata.label_mapping_target is not None:
+            check_label_mapping_target( self.metadata.label_mapping_target,  columns_target =self.metadata.columns_target)
+        if self.metadata.label_mapping_feature is not None:
+            check_label_mapping_feature(self.metadata.label_mapping_feature, columns_feature=self.metadata.columns_feature)
+        check_revision(self.metadata.revision)
+        check_cache_root(self.metadata.cache_root)
 
     def to_display(self) -> str:
         d = asdict(self.metadata)
@@ -236,7 +170,6 @@ def _import_pandas():
         raise MissingDependencyError("pandas is required to load format 'pandas'") from exc
     return pd
 
-
 def _import_numpy():
     try:
         import numpy as np
@@ -244,14 +177,12 @@ def _import_numpy():
         raise MissingDependencyError("numpy is required to load format 'numpy'") from exc
     return np
 
-
 def _import_polars():
     try:
         import polars as pl
     except ImportError as exc:
         raise MissingDependencyError("polars is required to load format 'polars'") from exc
     return pl
-
 
 def _import_torch():
     try:
