@@ -82,6 +82,7 @@ class DatasetRegistry:
         Instantiate a dataset by name. The dataset class is initialized with its
         declared metadata.
         """
+        LOGGER.info(f"Creating dataset {name}", color=["GREEN"])
         dataset_cls = self.get_class(name)
         return dataset_cls(dataset_cls.metadata)
 
