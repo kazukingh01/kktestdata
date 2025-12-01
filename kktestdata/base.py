@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass, asdict
-from typing import Any, Iterable, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     import pandas as pd
     import numpy as np
@@ -32,15 +32,15 @@ class DatasetMetadata:
     name: str
     description: str
     source_type: str
-    source_options: dict[str, Any]
     data_type: str  # tabular | image | language
     supported_formats: tuple[str, ...] # pandas, numpy, polars, torch, dataloader
     supported_tasks: tuple[str, ...]  # binary | multiclass | regression | rank
     columns_target: str | list[str] | None = None
     columns_feature: list[str] | None = None
     strategy: str | list[str] | None = None
-    label_mapping_target:  dict[str | int, int | dict[str, int]] | None = None # {feature_name | index: {label: index}}
-    label_mapping_feature: dict[str | int,       dict[str, int]] | None = None # {feature_name | index: {label: index}}
+    label_mapping_target:  dict[str | int, int | dict[str, int]] = None # {feature_name | index: {label: index}}
+    label_mapping_feature: dict[str | int,       dict[str, int]] = None # {feature_name | index: {label: index}}
+    source_options: dict[str, Any] | None = None
     revision: str = "v1.0.0"
     cache_root: str = f"~/.cache/{__package__}"
 
@@ -50,8 +50,6 @@ class BaseDataset:
 
     def __init__(self, metadata: DatasetMetadata):
         self.metadata = metadata
-        self._resolved_feature_columns: tuple[str, ...] | None = None
-        self._resolved_label_mapping: dict[str, int] | None = None
         self._validate_metadata()
         self.logger = set_logger(f"{__package__}.{metadata.name}")
 
@@ -75,7 +73,7 @@ class BaseDataset:
         assert all(isinstance(x, str) and x for x in meta.supported_formats)
         assert set(meta.supported_formats).issubset(ALLOWED_FORMATS)
         assert isinstance(meta.supported_tasks, tuple) and len(meta.supported_tasks) > 0
-        assert set[str](meta.supported_tasks).issubset(ALLOWED_TASKS)
+        assert set(meta.supported_tasks).issubset(ALLOWED_TASKS)
         # strategy
         if meta.strategy is not None:
             strategy_names: list[str]
@@ -104,8 +102,8 @@ class BaseDataset:
                 else:
                     assert all(x not in meta.columns_target for x in meta.columns_feature)
         # label_mapping_target
-        assert meta.label_mapping_target is None or isinstance(meta.label_mapping_target, dict)
-        if meta.label_mapping_target is not None:
+        assert isinstance(meta.label_mapping_target, dict)
+        if len(meta.label_mapping_target) > 0:
             # {label: label_index} or {feature_name | index: {label: label_index}}
             for x, y in meta.label_mapping_target.items():
                 assert isinstance(x, (str, int))
@@ -122,9 +120,9 @@ class BaseDataset:
                         for a, b in y.items():
                             assert isinstance(a, str) and isinstance(b, int)
         # label_mapping_feature
-        assert meta.label_mapping_feature is None or isinstance(meta.label_mapping_feature, dict)
-        if meta.label_mapping_feature is not None:
-            # 必ず {feature_name | index: {label: label_index}} の形式
+        assert isinstance(meta.label_mapping_feature, dict)
+        if len(meta.label_mapping_feature) > 0:
+            # pattern: {feature_name | index: {label: label_index}}
             for x, y in meta.label_mapping_feature.items():
                 assert isinstance(x, (str, int))
                 if isinstance(x, str):

@@ -5,18 +5,14 @@ from .base import (
     ALLOWED_STRATEGIES_BASE,
     ALLOWED_TASKS,
     BaseDataset,
-    CacheUnavailableError,
     DatasetError,
     DatasetMetadata,
-    DatasetNotFoundError,
     MissingDependencyError,
     OPTION_STRATEGY_PATTERN,
     REVISION_PATTERN,
-    SplitConfigurationError,
     UnsupportedFormatError,
-    UnsupportedTargetModeError,
 )
-from .registry import DatasetRegistry
+from .registry import DatasetNotFoundError, DatasetRegistry
 
 __all__ = [
     "DatasetRegistry",
@@ -25,10 +21,7 @@ __all__ = [
     "DatasetError",
     "DatasetNotFoundError",
     "UnsupportedFormatError",
-    "UnsupportedTargetModeError",
     "MissingDependencyError",
-    "CacheUnavailableError",
-    "SplitConfigurationError",
     "ALLOWED_SOURCE_TYPES",
     "ALLOWED_DATA_TYPES",
     "ALLOWED_TASKS",

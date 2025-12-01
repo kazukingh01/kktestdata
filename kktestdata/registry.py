@@ -7,10 +7,16 @@ from types import ModuleType
 from typing import Iterable
 from kklogger import set_logger
 
-from .base import BaseDataset, DatasetError, DatasetMetadata, DatasetNotFoundError
+from .base import BaseDataset, DatasetError, DatasetMetadata
 
 
 LOGGER = set_logger(__name__)
+
+
+class DatasetNotFoundError(DatasetError):
+    def __init__(self, name: str):
+        super().__init__(f"Dataset '{name}' not found")
+        self.name = name
 
 
 class DatasetRegistry:
@@ -23,7 +29,7 @@ class DatasetRegistry:
         self.datasets_dir = (
             Path(datasets_dir).resolve()
             if datasets_dir is not None
-            else Path(__file__).resolve().parent / "datasets"
+            else Path(__file__).resolve().parent / "dataset"
         )
         self._datasets: dict[str, type[BaseDataset]] = {}
         self._load_errors: dict[str, Exception] = {}
@@ -110,14 +116,16 @@ class DatasetRegistry:
         return dict(self._load_errors)
 
     def _iter_dataset_files(self) -> Iterable[Path]:
-        return (
-            path
-            for path in sorted(self.datasets_dir.glob("*.py"))
-            if path.name not in {"__init__.py", "__pycache__"} and not path.name.startswith("_")
-        )
+        for path in sorted(self.datasets_dir.rglob("*.py")):
+            if path.name == "__init__.py" or path.name.startswith("_"):
+                continue
+            if "__pycache__" in path.parts or "utils" in path.parts:
+                continue
+            yield path
 
     def _load_module(self, path: Path) -> ModuleType:
-        module_name = f"{__package__}.datasets.{path.stem}"
+        relative = path.relative_to(self.datasets_dir).with_suffix("")
+        module_name = ".".join((__package__, "dataset", *relative.parts))
         spec = importlib.util.spec_from_file_location(module_name, path)
         if spec is None or spec.loader is None:
             raise DatasetError(f"Could not create module spec for {path}")
@@ -149,4 +157,4 @@ class DatasetRegistry:
         return asdict(meta)
 
 
-__all__ = ["DatasetRegistry"]
+__all__ = ["DatasetRegistry", "DatasetNotFoundError"]
