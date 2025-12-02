@@ -31,7 +31,8 @@ class OpenMLDataset(BaseDataset):
         df = data["data"]
         assert meta.columns_feature is not None
         assert meta.columns_target  is not None
-        assert all(isinstance(x, str) and x in df.columns for x in meta.columns_feature)
+        assert all(isinstance(x, str) and x in df.columns for x in meta.columns_feature), \
+            f"columns_feature: {meta.columns_feature} not in {df.columns.tolist()}"
         columns_target = check_columns(meta.columns_target, is_allowed_single=True)
         df = df[list(meta.columns_feature) + columns_target]
         # check columns is null
@@ -60,6 +61,10 @@ class OpenMLDataset(BaseDataset):
         if strategy is not None:
             assert strategy in meta.strategy
             df = getattr(self, f"strategy_{strategy}")(df)
+        LOGGER.info(
+            "Fetched dataset %s rows=%s cols=%s target=%s",
+            meta.name, df.shape[0], df.shape[1], columns_target,
+        )
         LOGGER.info("END")
         return df
     
@@ -93,7 +98,7 @@ def build_openml_metadata(spec: OpenMLSpec, strategy: str | list[str] | None=Non
         source_type="openml",
         source_options={"version": spec.version,},
         data_type="tabular",
-        supported_formats=("numpy", "pandas"),
+        supported_formats=("numpy", "pandas", "polars", "torch"),
         supported_task=spec.task,
         n_data=spec.n_data,
         columns_target=spec.target,

@@ -13,6 +13,8 @@ class OpenMLSpec:
 
 
 # HR dataset name in instructions contained an extra space; using the OpenML canonical spelling
+PIXEL_FEATURES = [f"pixel{i}" for i in range(1, 785)]
+
 OPENML_SPECS: tuple[OpenMLSpec, ...] = (
     OpenMLSpec(
         name="blood-transfusion-service-center",
@@ -6371,6 +6373,69 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
         target="FinancialDistressNextTwoYears",
         task="binary",
         n_data=150000,
+        description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
+    ),
+    OpenMLSpec(
+        name="covertype",
+        version=3,
+        features=['Elevation', 'Aspect', 'Slope', 'Horizontal_Distance_To_Hydrology', 'Vertical_Distance_To_Hydrology', 'Horizontal_Distance_To_Roadways', 'Hillshade_9am', 'Hillshade_Noon', 'Hillshade_3pm', 'Horizontal_Distance_To_Fire_Points', 'Wilderness_Area1', 'Wilderness_Area2', 'Wilderness_Area3', 'Wilderness_Area4', 'Soil_Type1', 'Soil_Type2', 'Soil_Type3', 'Soil_Type4', 'Soil_Type5', 'Soil_Type6', 'Soil_Type7', 'Soil_Type8', 'Soil_Type9', 'Soil_Type10', 'Soil_Type11', 'Soil_Type12', 'Soil_Type13', 'Soil_Type14', 'Soil_Type15', 'Soil_Type16', 'Soil_Type17', 'Soil_Type18', 'Soil_Type19', 'Soil_Type20', 'Soil_Type21', 'Soil_Type22', 'Soil_Type23', 'Soil_Type24', 'Soil_Type25', 'Soil_Type26', 'Soil_Type27', 'Soil_Type28', 'Soil_Type29', 'Soil_Type30', 'Soil_Type31', 'Soil_Type32', 'Soil_Type33', 'Soil_Type34', 'Soil_Type35', 'Soil_Type36', 'Soil_Type37', 'Soil_Type38', 'Soil_Type39', 'Soil_Type40'],
+        target="class",
+        task="multiclass",
+        n_data=581012,
+        description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
+    ),
+    OpenMLSpec(
+        name="tamilnadu-electricity",
+        version=3,
+        features=['V1', 'V2'],
+        target="Class",
+        task="multiclass",
+        n_data=45781,
+        description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
+    ),
+    OpenMLSpec(
+        name="walking-activity",
+        version=1,
+        features=['V1', 'V2', 'V3', 'V4'],
+        target="Class",
+        task="multiclass",
+        n_data=149332,
+        description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
+    ),
+    OpenMLSpec(
+        name="KDDCup99",
+        version=5,
+        features=['duration', 'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes', 'land', 'wrong_fragment', 'urgent', 'hot', 'num_failed_logins', 'logged_in', 'num_compromised', 'root_shell', 'su_attempted', 'num_root', 'num_file_creations', 'num_shells', 'num_access_files', 'num_outbound_cmds', 'is_host_login', 'is_guest_login', 'count', 'srv_count', 'serror_rate', 'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate', 'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count', 'dst_host_srv_count', 'dst_host_same_srv_rate', 'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate', 'dst_host_serror_rate', 'dst_host_srv_serror_rate', 'dst_host_rerror_rate', 'dst_host_srv_rerror_rate'],
+        target="target",
+        task="multiclass",
+        n_data=494020,
+        description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
+    ),
+    OpenMLSpec(
+        name="helena",
+        version=1,
+        features=['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10', 'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17', 'V18', 'V19', 'V20', 'V21', 'V22', 'V23', 'V24', 'V25', 'V26', 'V27'],
+        target="class",
+        task="multiclass",
+        n_data=65196,
+        description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
+    ),
+    OpenMLSpec(
+        name="mnist_784",
+        version=1,
+        features=PIXEL_FEATURES,
+        target="class",
+        task="multiclass",
+        n_data=70000,
+        description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
+    ),
+    OpenMLSpec(
+        name="Fashion-MNIST",
+        version=1,
+        features=PIXEL_FEATURES,
+        target="class",
+        task="multiclass",
+        n_data=70000,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
 )

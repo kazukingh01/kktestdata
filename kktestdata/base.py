@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass, asdict
 from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -9,7 +10,9 @@ from kklogger import set_logger
 from .check import (
     check_source_type, check_data_type, check_strategy, check_supported_formats,
     check_supported_task, check_columns_target, check_columns_feature, check_label_mapping_target,
-    check_label_mapping_feature, check_revision, check_cache_root, check_columns_is_null
+    check_label_mapping_feature, check_revision, check_cache_root, check_columns_is_null,
+    ALLOWED_SOURCE_TYPES, ALLOWED_DATA_TYPES, ALLOWED_TASKS, ALLOWED_FORMATS,
+    ALLOWED_STRATEGIES_BASE, OPTION_STRATEGY_PATTERN, REVISION_PATTERN
 )
 from .utils import to_display
 
@@ -46,7 +49,7 @@ class BaseDataset:
     metadata: DatasetMetadata
 
     def __init__(self, metadata: DatasetMetadata):
-        self.metadata = metadata
+        self.metadata = copy.deepcopy(metadata)
         self._validate_metadata()
         self.logger = set_logger(f"{__package__}.{metadata.name}")
 
