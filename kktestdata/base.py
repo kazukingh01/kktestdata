@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass, asdict
 from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -10,8 +9,10 @@ from kklogger import set_logger
 from .check import (
     check_source_type, check_data_type, check_strategy, check_supported_formats,
     check_supported_task, check_columns_target, check_columns_feature, check_label_mapping_target,
-    check_label_mapping_feature, check_revision, check_cache_root
+    check_label_mapping_feature, check_revision, check_cache_root, check_columns_is_null
 )
+from .utils import to_display
+
 
 class DatasetError(Exception):
     pass
@@ -30,6 +31,7 @@ class DatasetMetadata:
     data_type: str  # tabular | image | language
     supported_formats: tuple[str, ...] # pandas, numpy, polars, torch, dataloader
     supported_task: str  # binary | multiclass | regression | rank
+    n_data: int | None = None
     columns_target: str | list[str] | None = None
     columns_feature: list[str] | None = None
     columns_is_null: dict[str | int, bool] | None = None
@@ -60,21 +62,23 @@ class BaseDataset:
             check_columns_target( self.metadata.columns_target)
         if self.metadata.columns_feature is not None:
             check_columns_feature(self.metadata.columns_feature, columns_target=self.metadata.columns_target)
-        if self.metadata.label_mapping_target is not None:
+        if self.metadata.columns_is_null is not None and len(self.metadata.columns_is_null) > 0:
+            check_columns_is_null(self.metadata.columns_is_null, columns_feature=self.metadata.columns_feature)
+        if self.metadata.label_mapping_target is not None and len(self.metadata.label_mapping_target) > 0:
             check_label_mapping_target( self.metadata.label_mapping_target,  columns_target =self.metadata.columns_target)
-        if self.metadata.label_mapping_feature is not None:
+        if self.metadata.label_mapping_feature is not None and len(self.metadata.label_mapping_feature) > 0:
             check_label_mapping_feature(self.metadata.label_mapping_feature, columns_feature=self.metadata.columns_feature)
         check_revision(self.metadata.revision)
         check_cache_root(self.metadata.cache_root)
 
-    def to_display(self) -> str:
-        d = asdict(self.metadata)
-        w = max(len(k) for k in d) # max length of key
-        lines = [f"{self.__class__.__name__}("]
-        for k, v in d.items():
-            lines.append(f"  {k.ljust(w)} = {v!r},")
-        lines.append(")")
-        return "\n".join(lines)
+    def to_dict(self, list_keys: list[str] | None = None) -> dict[str, Any]:
+        return to_dict(self.metadata, list_keys=list_keys)
+
+    def to_display(self, list_keys: list[str] | None = [
+        "name", "source_type", "data_type", "supported_formats", "supported_task", 
+        "n_data", "n_target", "n_features", "n_null_columns"
+    ]) -> str:
+        return to_display(self.to_dict(list_keys=list_keys))
 
     def load_data(self, format: str | None = None) -> Any:
         assert format is None or isinstance(format, str) and format
@@ -160,7 +164,21 @@ class BaseDataset:
     def _load_dataloader(self) -> "torch.utils.data.DataLoader":
         if "dataloader" in self.metadata.supported_formats:
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
-    
+
+def to_dict(meta: DatasetMetadata, list_keys: list[str] | None = None) -> dict[str, Any]:
+    assert isinstance(meta, DatasetMetadata)
+    meta = asdict(meta)
+    if meta.get("columns_target") is not None and not isinstance(meta.get("columns_target"), (tuple, list)):
+        meta["columns_target"] = [meta["columns_target"], ]
+    meta["n_features"]     = len(meta["columns_feature"]) if meta.get("columns_feature") is not None else None
+    meta["n_target"]       = len(meta["columns_target"])  if meta.get("columns_target")  is not None else None
+    meta["n_null_columns"] = sum(list(meta.get("columns_is_null", {}).values())) if meta.get("columns_is_null") is not None else None
+    if list_keys is None:
+        list_keys = list(meta.keys())
+    else:
+        assert (isinstance(list_keys, list) and all(isinstance(k, str) for k in list_keys))
+        assert all(k in meta.keys() for k in list_keys)
+    return {k: meta.get(k) for k in list_keys}
 
 # Runtime imports are deferred to keep optional dependencies optional at runtime
 def _import_pandas():
@@ -204,4 +222,5 @@ __all__ = [
     "ALLOWED_STRATEGIES_BASE",
     "OPTION_STRATEGY_PATTERN",
     "REVISION_PATTERN",
+    "to_display",
 ]

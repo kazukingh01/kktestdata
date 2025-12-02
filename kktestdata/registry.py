@@ -1,13 +1,12 @@
 import importlib.util
 import sys
-from dataclasses import asdict
 from inspect import isclass
 from pathlib import Path
 from types import ModuleType
 from typing import Iterable
 from kklogger import set_logger
-
-from .base import BaseDataset, DatasetError, DatasetMetadata
+import pandas as pd
+from .base import BaseDataset, DatasetError, DatasetMetadata, to_display, to_dict
 
 
 LOGGER = set_logger(__name__)
@@ -92,11 +91,6 @@ class DatasetRegistry:
         dataset_cls = self.get_class(name)
         return dataset_cls(dataset_cls.metadata)
 
-    def get_metadata(self, name: str) -> DatasetMetadata:
-        """Return the metadata for a registered dataset."""
-        dataset_cls = self.get_class(name)
-        return dataset_cls.metadata
-
     def names(self) -> tuple[str, ...]:
         """Return registered dataset names."""
         return tuple(self._datasets.keys())
@@ -107,13 +101,12 @@ class DatasetRegistry:
         all registered datasets are included; otherwise only the selected one.
         """
         if name is not None:
-            return self._metadata_to_dict(self.get_metadata(name))
-        return [self._metadata_to_dict(meta) for meta in self._iter_metadata()]
-
-    @property
-    def load_errors(self) -> dict[str, Exception]:
-        """Datasets that failed to load during discovery."""
-        return dict(self._load_errors)
+            return to_display(self.get_class(name).metadata)
+        list_dict = [to_dict(self.get_class(name).metadata, list_keys = [
+            "name", "source_type", "data_type", "supported_formats", "supported_task", 
+            "n_data", "n_target", "n_features", "n_null_columns"
+        ]) for name in self.names()]
+        return pd.DataFrame(list_dict).to_string(index=False)
 
     def _iter_dataset_files(self) -> Iterable[Path]:
         for path in sorted(self.datasets_dir.rglob("*.py")):
@@ -155,9 +148,6 @@ class DatasetRegistry:
 
     def _iter_metadata(self) -> Iterable[DatasetMetadata]:
         return (cls.metadata for cls in self._datasets.values())
-
-    def _metadata_to_dict(self, meta: DatasetMetadata) -> dict:
-        return asdict(meta)
 
 
 __all__ = ["DatasetRegistry", "DatasetNotFoundError"]

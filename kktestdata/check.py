@@ -39,7 +39,7 @@ def check_supported_task(supported_task: str, columns_target: str | list[str] | 
     assert isinstance(supported_task, str) and supported_task
     assert supported_task in ALLOWED_TASKS
     if columns_target is not None:
-        columns_target = __check_columns(columns_target, is_allowed_single=True)
+        columns_target = check_columns(columns_target, is_allowed_single=True)
         if supported_task == "binary":
             assert len(columns_target) == 1
         elif supported_task == "multiclass":
@@ -73,7 +73,7 @@ def check_strategy(strategy: str | list[str] | None, instance: Any = None):
             if instance is not None:
                 assert getattr(instance, f"strategy_{strategy_name}", None) is not None
 
-def __check_columns(columns: str | int | list[str] | list[int], is_allowed_single: bool = False) -> list[str] | list[int]:
+def check_columns(columns: str | int | list[str] | list[int], is_allowed_single: bool = False) -> list[str] | list[int]:
     assert isinstance(is_allowed_single, bool)
     def __check(cols):
         assert isinstance(cols, (list, tuple))
@@ -93,13 +93,25 @@ def __check_columns(columns: str | int | list[str] | list[int], is_allowed_singl
     return list(columns)
 
 def check_columns_target(columns_target: str | list[str]):
-    __check_columns(columns_target, is_allowed_single=True)
+    check_columns(columns_target, is_allowed_single=True)
 
 def check_columns_feature(columns_feature: list[str], columns_target: str | list[str] | None = None):
-    __check_columns(columns_feature, is_allowed_single=False)
+    check_columns(columns_feature, is_allowed_single=False)
     if columns_target is not None:
-        columns_target = __check_columns(columns_target, is_allowed_single=True)
+        columns_target = check_columns(columns_target, is_allowed_single=True)
         assert all(col not in columns_feature for col in columns_target)
+
+def check_columns_is_null(columns_is_null: dict[str | int, bool], columns_feature: list[str] | None = None):
+    assert isinstance(columns_is_null, dict)
+    assert len(columns_is_null) > 0
+    assert all(isinstance(k, int) for k in columns_is_null.keys()) or all(isinstance(k, str) for k in columns_is_null.keys())
+    assert all(isinstance(v, bool) for v in columns_is_null.values())
+    if columns_feature is not None:
+        columns_feature = check_columns(columns_feature, is_allowed_single=False)
+        if all(isinstance(k, int) for k in columns_is_null.keys()):
+            assert all(k < len(columns_feature) for k in columns_is_null.keys())
+        else:
+            assert all(k in columns_feature for k in columns_is_null.keys())
 
 def __check_label_mapping(
     label_mapping: dict[str | int, int | dict[str, int]], is_allowed_single: bool = False
@@ -129,7 +141,7 @@ def __check_label_mapping(
 def check_label_mapping_target(label_mapping_target: dict[str | int, int | dict[str, int]], columns_target: str | list[str] | None = None):
     label_mapping_target = __check_label_mapping(label_mapping_target, is_allowed_single=True)
     if columns_target is not None:
-        columns_target = __check_columns(columns_target, is_allowed_single=True)
+        columns_target = check_columns(columns_target, is_allowed_single=True)
         for x, y in label_mapping_target.items():
             if x == "__dummy__":
                 assert len(columns_target) == 1
@@ -139,7 +151,7 @@ def check_label_mapping_target(label_mapping_target: dict[str | int, int | dict[
 def check_label_mapping_feature(label_mapping_feature: dict[str | int, dict[str, int]], columns_feature: list[str] | None = None):
     label_mapping_feature = __check_label_mapping(label_mapping_feature, is_allowed_single=False)
     if columns_feature is not None:
-        columns_feature = __check_columns(columns_feature, is_allowed_single=False)
+        columns_feature = check_columns(columns_feature, is_allowed_single=False)
         for x, _ in label_mapping_feature.items():
             assert x in columns_feature
 

@@ -5,11 +5,11 @@ if TYPE_CHECKING:
     import numpy as np
     import polars as pl
     import torch
-from kktestdata.check import __check_columns
 from sklearn.datasets import fetch_openml
 from kklogger import set_logger
 
 from ..base import BaseDataset, DatasetMetadata
+from ..check import check_columns
 from ..utils import detect_label_mapping, apply_label_mapping
 from ..catalog.openml import OpenMLSpec
 
@@ -32,8 +32,11 @@ class OpenMLDataset(BaseDataset):
         assert meta.columns_feature is not None
         assert meta.columns_target  is not None
         assert all(isinstance(x, str) and x in df.columns for x in meta.columns_feature)
-        columns_target = __check_columns(meta.columns_target)
+        columns_target = check_columns(meta.columns_target, is_allowed_single=True)
         df = df[list(meta.columns_feature) + columns_target]
+        # check columns is null
+        for col in meta.columns_feature:
+            meta.columns_is_null[col] = bool(df[col].isnull().any())
         # auto detect label mapping
         if len(meta.label_mapping_target) == 0:
             if meta.supported_task in ["binary", "multiclass"]:
@@ -83,7 +86,6 @@ class OpenMLDataset(BaseDataset):
         LOGGER.info("END")
         return ndf_x, ndf_y
 
-
 def build_openml_metadata(spec: OpenMLSpec, strategy: str | list[str] | None=None) -> DatasetMetadata:
     return DatasetMetadata(
         name=spec.name,
@@ -93,8 +95,10 @@ def build_openml_metadata(spec: OpenMLSpec, strategy: str | list[str] | None=Non
         data_type="tabular",
         supported_formats=("numpy", "pandas"),
         supported_task=spec.task,
+        n_data=spec.n_data,
         columns_target=spec.target,
         columns_feature=spec.features,
+        columns_is_null={},
         strategy=strategy,
         label_mapping_target={},
         label_mapping_feature={},

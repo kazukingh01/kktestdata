@@ -8,6 +8,7 @@ class OpenMLSpec:
     features: list[str]
     target: str
     task: str
+    n_data: int | None
     description: str
 
 
@@ -22,6 +23,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'MonthsSinceFirstDonation'],
         target="DonatedBloodInMarch2007",
         task="binary",
+        n_data=748,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -37,6 +39,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Age'],
         target="TestedPositiveForDiabetes",
         task="binary",
+        n_data=768,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -82,6 +85,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'packing'],
         target="classes",
         task="multiclass",
+        n_data=898,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -90,6 +94,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
         features=['CIC0', 'SM1_Dz(Z)', 'GATS1i', 'NdsCH', 'NdssC', 'MLOGP'],
         target="LC50",
         task="regression",
+        n_data=907,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -117,6 +122,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'foreign_worker'],
         target="good_or_bad_customer",
         task="binary",
+        n_data=1000,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -125,6 +131,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
         features=['Age', 'SystolicBP', 'DiastolicBP', 'BS', 'BodyTemp', 'HeartRate'],
         target="RiskLevel",
         task="multiclass",
+        n_data=1014,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -140,6 +147,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Age'],
         target="ConcreteCompressiveStrength",
         task="regression",
+        n_data=1030,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -188,6 +196,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Num_Halogen_Atoms'],
         target="Biodegradable",
         task="binary",
+        n_data=1054,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -196,6 +205,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
         features=['age', 'sex', 'bmi', 'children', 'smoker', 'region'],
         target="charges",
         task="regression",
+        n_data=1338,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -212,6 +222,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'having_IP_Address'],
         target="WebsiteType",
         task="multiclass",
+        n_data=1353,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -220,6 +231,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
         features=['months_as_member', 'weight', 'days_before', 'day_of_week', 'time', 'category'],
         target="attended",
         task="binary",
+        n_data=1500,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -232,6 +244,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'suction-side-displacement-thickness'],
         target="scaled-sound-pressure",
         task="regression",
+        n_data=1503,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -240,6 +253,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
         features=['model', 'engine_power', 'age_in_days', 'km', 'previous_owners', 'lat', 'lon'],
         target="price",
         task="regression",
+        n_data=1538,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -358,6 +372,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'TRENT_S_n'],
         target="LET_IS",
         task="multiclass",
+        n_data=1699,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -378,6 +393,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'is_client'],
         target="bad_client_target",
         task="binary",
+        n_data=1723,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -410,6 +426,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Complain'],
         target="Response",
         task="binary",
+        n_data=2240,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -447,6 +464,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          's65'],
         target="Contaminated",
         task="binary",
+        n_data=2400,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -469,6 +487,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'maxenergy'],
         target="HighEnergySeismicBump",
         task="binary",
+        n_data=2584,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -536,6 +555,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'position_30'],
         target="SiteType",
         task="multiclass",
+        n_data=3190,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -2319,6 +2339,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'D1776'],
         target="MoleculeElicitsResponse",
         task="binary",
+        n_data=3751,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -3943,6 +3964,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'molecule_structure_property_1617'],
         target="CompoundActivity",
         task="multiclass",
+        n_data=3845,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -3986,6 +4008,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'GDP'],
         target="AcademicOutcome",
         task="multiclass",
+        n_data=4424,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -4012,6 +4035,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'number_customer_service_calls'],
         target="CustomerChurned",
         task="binary",
+        n_data=5000,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5043,6 +5067,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'FCFP6_1024_1023'],
         target="MEDIAN_PXC50",
         task="regression",
+        n_data=5742,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5114,6 +5139,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'sales_to_fixed_assets'],
         target="company_bankrupt",
         task="binary",
+        n_data=5910,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5133,6 +5159,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'wine_color'],
         target="median_wine_quality",
         task="regression",
+        n_data=6497,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5234,6 +5261,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Equity_to_Liability'],
         target="Bankrupt",
         task="binary",
+        n_data=6819,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5327,6 +5355,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'android.permission.PROCESS_INCOMING_CALLS'],
         target="Malware",
         task="binary",
+        n_data=7491,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5419,6 +5448,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'numberOfSocialSecurityInsurancePolicies'],
         target="MobileHomePolicy",
         task="binary",
+        n_data=9822,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5436,6 +5466,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'estimated_salary'],
         target="churn",
         task="binary",
+        n_data=10000,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5466,6 +5497,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'PercentTradesWBalance'],
         target="RiskPerformance",
         task="binary",
+        n_data=10459,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5494,6 +5526,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'branchCount'],
         target="defects",
         task="binary",
+        n_data=10885,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5511,6 +5544,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Weight_in_gms'],
         target="ArrivedLate",
         task="binary",
+        n_data=10999,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5535,6 +5569,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Weekend'],
         target="Revenue",
         task="binary",
+        n_data=12330,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5566,6 +5601,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'direction_opp'],
         target="AcceptCoupon",
         task="binary",
+        n_data=12684,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5588,6 +5624,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'structure_quality'],
         target="SALE_PRC",
         task="regression",
+        n_data=13776,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5607,6 +5644,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'training_hours'],
         target="LookingForJobChange",
         task="binary",
+        n_data=19158,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5622,6 +5660,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Longitude'],
         target="LnMedianHouseValue",
         task="regression",
+        n_data=20640,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5710,6 +5749,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'wtd_std_Valence'],
         target="critical_temp",
         task="regression",
+        n_data=21263,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5740,6 +5780,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'PAY_AMT6'],
         target="DefaultOnPaymentNextMonth",
         task="binary",
+        n_data=30000,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5756,6 +5797,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'ROLE_CODE'],
         target="ResourceApproved",
         task="binary",
+        n_data=32769,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5776,6 +5818,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'poutcome'],
         target="SubscribeTermDeposit",
         task="binary",
+        n_data=45211,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5792,6 +5835,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Type_of_vehicle'],
         target="Time_taken(min)",
         task="regression",
+        n_data=45451,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -5808,6 +5852,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'SpatialDistNK'],
         target="ResidualSize",
         task="regression",
+        n_data=45730,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -6027,6 +6072,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'Var229'],
         target="appetency",
         task="binary",
+        n_data=50000,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -6035,6 +6081,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
         features=['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z'],
         target="price",
         task="regression",
+        n_data=53940,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -6089,6 +6136,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'diabetesMed'],
         target="EarlyReadmission",
         task="binary",
+        n_data=71518,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -6266,6 +6314,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'eg_000'],
         target="AirPressureSystemFailure",
         task="binary",
+        n_data=76000,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -6274,6 +6323,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
         features=['alpha', 'delta', 'u', 'g', 'r', 'i', 'z', 'cam_col', 'redshift', 'plate', 'fiber_ID'],
         target="ObjectType",
         task="multiclass",
+        n_data=78053,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -6302,6 +6352,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'ArrivalDelayinMinutes'],
         target="satisfaction",
         task="binary",
+        n_data=129880,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
     OpenMLSpec(
@@ -6319,6 +6370,7 @@ OPENML_SPECS: tuple[OpenMLSpec, ...] = (
          'NumberOfDependents'],
         target="FinancialDistressNextTwoYears",
         task="binary",
+        n_data=150000,
         description="This dataset was curated for [TabArena](https://tabarena.ai/) by the TabArena team",
     ),
 )
