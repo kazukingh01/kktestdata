@@ -1,6 +1,6 @@
 [project]
 name = "kktestdata"
-version = "1.0.3"
+version = "1.0.4"
 requires-python = ">= 3.12.2"
 description = "Dataset formatting helpers for evaluation data across pandas/numpy/polars/torch/cv2"
 dependencies = [

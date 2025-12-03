@@ -21,7 +21,7 @@ LOGGER = set_logger(__name__)
 
 
 class OpenMLDataset(BaseDataset):
-    def _load_pandas(self, strategy: str | None = None) -> pd.DataFrame:
+    def _domain_load_pandas(self, strategy: str | None = None) -> pd.DataFrame:
         LOGGER.info("START")
         meta = self.metadata
         data = fetch_openml(
@@ -71,24 +71,24 @@ class OpenMLDataset(BaseDataset):
         LOGGER.info("END")
         return df
     
-    def _load_numpy(self, strategy: str | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def _domain_load_numpy(self, strategy: str | None = None) -> tuple[np.ndarray, np.ndarray]:
         LOGGER.info("START")
-        df    = self._load_pandas(strategy=strategy)
+        df    = self._domain_load_pandas(strategy=strategy)
         ndf_x = df[self.metadata.columns_feature].to_numpy()
         ndf_y = df[self.metadata.columns_target ].to_numpy()
         LOGGER.info("END")
         return ndf_x, ndf_y
     
-    def _load_polars(self, strategy: str | None = None) -> pl.DataFrame:
+    def _domain_load_polars(self, strategy: str | None = None) -> pl.DataFrame:
         LOGGER.info("START")
-        df = self._load_pandas(strategy=strategy)
+        df = self._domain_load_pandas(strategy=strategy)
         df = pl.from_dataframe(df)
         LOGGER.info("END")
         return df
 
-    def _load_torch(self, strategy: str | None = None) -> tuple[torch.Tensor, torch.Tensor]:
+    def _domain_load_torch(self, strategy: str | None = None) -> tuple[torch.Tensor, torch.Tensor]:
         LOGGER.info("START")
-        ndf_x, ndf_y = self._load_numpy(strategy=strategy)
+        ndf_x, ndf_y = self._domain_load_numpy(strategy=strategy)
         ndf_x = torch.from_numpy(ndf_x)
         ndf_y = torch.from_numpy(ndf_y)
         LOGGER.info("END")

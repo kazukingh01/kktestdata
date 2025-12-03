@@ -145,4 +145,3 @@ def to_display(dictwk: dict[str, Any]) -> str:
         lines.append(f"  {k.ljust(w)} = {v!r},")
     lines.append(")")
     return "\n".join(lines)
-

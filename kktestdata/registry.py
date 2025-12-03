@@ -7,6 +7,8 @@ from typing import Iterable, TYPE_CHECKING
 from kklogger import set_logger
 from .base import BaseDataset, DatasetError, DatasetMetadata, to_display, to_dict
 from .utils import get_dependencies
+from .check import check_random_seed
+from .helpers import RANDOM_SEED
 
 # import dependencies if it's ready to use
 pd = get_dependencies(["pd"])
@@ -24,11 +26,6 @@ class DatasetNotFoundError(DatasetError):
 
 
 class DatasetRegistry:
-    """
-    Discovers dataset implementations under ``datasets/*.py`` and exposes them
-    through a simple registry interface.
-    """
-
     def __init__(self, datasets_dir: str | Path | None = None, auto_discover: bool = True):
         self.datasets_dir = (
             Path(datasets_dir).resolve()
@@ -37,16 +34,11 @@ class DatasetRegistry:
         )
         self._datasets: dict[str, type[BaseDataset]] = {}
         self._load_errors: dict[str, Exception] = {}
-
         if auto_discover:
             self.discover()
 
     def discover(self, reload: bool = False) -> None:
-        """
-        Import every ``datasets/*.py`` file and register a single BaseDataset subclass
-        defined in each module. Modules that fail to import are skipped and recorded
-        in ``load_errors``.
-        """
+        assert isinstance(reload, bool)
         if reload:
             self._datasets.clear()
             self._load_errors.clear()
@@ -64,47 +56,31 @@ class DatasetRegistry:
                 LOGGER.warning("Skipping dataset %s: %s", path.name, exc)
 
     def register(self, dataset_cls: type[BaseDataset]) -> None:
-        """
-        Register a dataset class explicitly. The class must expose a ``metadata``
-        attribute of type DatasetMetadata.
-        """
-        if not isclass(dataset_cls) or not issubclass(dataset_cls, BaseDataset):
-            raise DatasetError(f"{dataset_cls!r} is not a BaseDataset subclass")
-
-        meta = getattr(dataset_cls, "metadata", None)
-        if not isinstance(meta, DatasetMetadata):
-            raise DatasetError(f"{dataset_cls.__name__} must define `metadata: DatasetMetadata`")
-
+        assert isinstance(dataset_cls, type) and issubclass(dataset_cls, BaseDataset)
+        meta = getattr(dataset_cls, "metadata")
+        assert isinstance(meta, DatasetMetadata)
         if meta.name in self._datasets:
             raise DatasetError(f"Dataset with name '{meta.name}' is already registered")
-
         self._datasets[meta.name] = dataset_cls
 
     def get_class(self, name: str) -> type[BaseDataset]:
-        """Return the registered dataset class for ``name``."""
-        try:
-            return self._datasets[name]
-        except KeyError as exc:
-            raise DatasetNotFoundError(name) from exc
+        assert isinstance(name, str) and name
+        if name not in self._datasets:
+            raise DatasetNotFoundError(name)
+        return self._datasets[name]
 
-    def create(self, name: str) -> BaseDataset:
-        """
-        Instantiate a dataset by name. The dataset class is initialized with its
-        declared metadata.
-        """
+    def create(self, name: str, seed: int = RANDOM_SEED) -> BaseDataset:
+        assert isinstance(name, str) and name
+        check_random_seed(seed)
         LOGGER.info(f"Creating dataset {name}", color=["GREEN"])
         dataset_cls = self.get_class(name)
-        return dataset_cls(dataset_cls.metadata)
+        return dataset_cls(dataset_cls.metadata, seed=seed)
 
     def names(self) -> tuple[str, ...]:
-        """Return registered dataset names."""
         return tuple(self._datasets.keys())
 
     def info(self, name: str | None = None) -> list[dict] | dict:
-        """
-        Return metadata information as dictionaries. When ``name`` is omitted,
-        all registered datasets are included; otherwise only the selected one.
-        """
+        assert name is None or isinstance(name, str)
         if name is not None:
             return to_display(self.get_class(name).metadata)
         list_dict = [to_dict(self.get_class(name).metadata, list_keys = [
