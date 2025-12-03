@@ -19,6 +19,7 @@ class DummyNdarray:
         pass
 
 def get_dependencies(list_dependencies: list[str] = ["pd"]) -> tuple[Any, ...]:
+    LOGGER.info("START")
     assert isinstance(list_dependencies, list) and len(list_dependencies) > 0
     for mod in list_dependencies:
         if mod.find(".") >= 0:
@@ -80,7 +81,11 @@ def get_dependencies(list_dependencies: list[str] = ["pd"]) -> tuple[Any, ...]:
             except ImportError:
                 LOGGER.warning(f"{mod} is not installed")
                 list_ret.append(None)
-    return tuple(list_ret)
+    LOGGER.info("END")
+    if len(list_ret) == 1:
+        return list_ret[0]
+    else:
+        return tuple(list_ret)
 
 # import dependencies if it's ready to use
 pd, np = get_dependencies(["pd", "np"])
