@@ -1,7 +1,92 @@
 import re
-import pandas as pd
-import numpy as np
-from typing import Any
+from importlib import import_module
+from typing import Any, TYPE_CHECKING
+from kklogger import set_logger
+
+
+LOGGER = set_logger(__name__)
+DEPENDENCIES = ["pd", "np", "pl", "torch", "cv", "sklearn"]
+
+
+class DummyDataframe:
+    class DataFrame:
+        pass
+class DummyTensor:
+    class Tensor:
+        pass
+class DummyNdarray:
+    class ndarray:
+        pass
+
+def get_dependencies(list_dependencies: list[str] = ["pd"]) -> tuple[Any, ...]:
+    assert isinstance(list_dependencies, list) and len(list_dependencies) > 0
+    for mod in list_dependencies:
+        if mod.find(".") >= 0:
+            module_top = mod.split(".")[0]
+            assert module_top in DEPENDENCIES, f"Invalid dependency: {mod}"
+        else:
+            assert mod in DEPENDENCIES, f"Invalid dependency: {mod}"
+    list_ret = []
+    for mod in list_dependencies:
+        if mod == "pd":
+            try:
+                import pandas as pd
+                list_ret.append(pd)
+            except ImportError:
+                LOGGER.warning(f"pandas is not installed")
+                list_ret.append(DummyDataframe())
+        elif mod == "np":
+            try:
+                import numpy as np
+                list_ret.append(np)
+            except ImportError:
+                LOGGER.warning(f"numpy is not installed")
+                list_ret.append(DummyNdarray())
+        elif mod == "pl":
+            try:
+                import polars as pl
+                list_ret.append(pl)
+            except ImportError:
+                LOGGER.warning(f"polars is not installed")
+                list_ret.append(DummyDataframe())
+        elif mod == "torch":
+            try:
+                import torch
+                list_ret.append(torch)
+            except ImportError:
+                LOGGER.warning(f"torch is not installed")
+                list_ret.append(DummyTensor())
+        elif mod == "cv":
+            try:
+                import cv2
+                list_ret.append(cv2)
+            except ImportError:
+                LOGGER.warning(f"cv2 is not installed")
+                list_ret.append(None)
+        elif mod == "sklearn":
+            try:
+                import sklearn
+                list_ret.append(sklearn)
+            except ImportError:
+                LOGGER.warning(f"scikit-learn is not installed")
+                list_ret.append(None)
+        else:
+            try:
+                modules  = mod.split(".")
+                funcname = modules[-1]
+                modules  = ".".join(modules[:-1])
+                module   = import_module(modules)
+                list_ret.append(getattr(module, funcname))
+            except ImportError:
+                LOGGER.warning(f"{mod} is not installed")
+                list_ret.append(None)
+    return tuple(list_ret)
+
+# import dependencies if it's ready to use
+pd, np = get_dependencies(["pd", "np"])
+if TYPE_CHECKING:
+    import pandas as pd
+    import numpy as np
 
 
 def detect_label_mapping(df: pd.DataFrame) -> dict[str, int]:

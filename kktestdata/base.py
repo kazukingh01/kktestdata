@@ -1,11 +1,6 @@
 import copy
 from dataclasses import dataclass, asdict
 from typing import Any, TYPE_CHECKING
-if TYPE_CHECKING:
-    import pandas as pd
-    import numpy as np
-    import polars as pl
-    import torch
 from kklogger import set_logger
 from .check import (
     check_source_type, check_data_type, check_strategy, check_supported_formats,
@@ -14,7 +9,16 @@ from .check import (
     ALLOWED_SOURCE_TYPES, ALLOWED_DATA_TYPES, ALLOWED_TASKS, ALLOWED_FORMATS,
     ALLOWED_STRATEGIES_BASE, OPTION_STRATEGY_PATTERN, REVISION_PATTERN
 )
-from .utils import to_display
+from .utils import to_display, get_dependencies
+
+# import dependencies if it's ready to use
+pd, np, pl, torch, DataLoader = get_dependencies(["pd", "np", "pl", "torch", "torch.utils.data.DataLoader"])
+if TYPE_CHECKING:
+    import pandas as pd
+    import numpy as np
+    import polars as pl
+    import torch
+    from torch.utils.data import DataLoader
 
 
 class DatasetError(Exception):
@@ -48,8 +52,10 @@ class DatasetMetadata:
 class BaseDataset:
     metadata: DatasetMetadata
 
-    def __init__(self, metadata: DatasetMetadata):
+    def __init__(self, metadata: DatasetMetadata, seed: int = 42):
+        assert isinstance(seed, int) and seed >= 0
         self.metadata = copy.deepcopy(metadata)
+        self.seed     = seed
         self._validate_metadata()
         self.logger = set_logger(f"{__package__}.{metadata.name}")
 
@@ -101,8 +107,7 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {format}")
     
-    def load_pandas(self) -> "pd.DataFrame":
-        pd = _import_pandas()
+    def load_pandas(self) -> pd.DataFrame:
         if "pandas" in self.metadata.supported_formats:
             ins = self._load_pandas()
             assert isinstance(ins, pd.DataFrame)
@@ -110,12 +115,11 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_pandas(self) -> "pd.DataFrame":
+    def _load_pandas(self) -> pd.DataFrame:
         if "pandas" in self.metadata.supported_formats:
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
-    def load_numpy(self) -> "np.ndarray":
-        np = _import_numpy()
+    def load_numpy(self) -> np.ndarray:
         if "numpy" in self.metadata.supported_formats:
             ins = self._load_numpy()
             assert isinstance(ins, (tuple, list)) and len(ins) == 2
@@ -124,12 +128,11 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_numpy(self) -> "np.ndarray":
+    def _load_numpy(self) -> np.ndarray:
         if "numpy" in self.metadata.supported_formats:
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
-    def load_polars(self) -> "pl.DataFrame":
-        pl = _import_polars()
+    def load_polars(self) -> pl.DataFrame:
         if "polars" in self.metadata.supported_formats:
             ins = self._load_polars()
             assert isinstance(ins, pl.DataFrame)
@@ -137,12 +140,11 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_polars(self) -> "pl.DataFrame":
+    def _load_polars(self) -> pl.DataFrame:
         if "polars" in self.metadata.supported_formats:
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
-    def load_torch(self) -> "torch.Tensor":
-        torch = _import_torch()
+    def load_torch(self) -> torch.Tensor:
         if "torch" in self.metadata.supported_formats:
             ins = self._load_torch()
             assert isinstance(ins, (tuple, list)) and len(ins) == 2
@@ -151,20 +153,19 @@ class BaseDataset:
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_torch(self) -> "torch.Tensor":
+    def _load_torch(self) -> torch.Tensor:
         if "torch" in self.metadata.supported_formats:
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
     
-    def load_dataloader(self) -> "torch.utils.data.DataLoader":
-        torch = _import_torch()
+    def load_dataloader(self) -> DataLoader:
         if "dataloader" in self.metadata.supported_formats:
             ins = self._load_dataloader()
-            assert isinstance(ins, torch.utils.data.DataLoader)
+            assert isinstance(ins, DataLoader)
             return ins
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
-    def _load_dataloader(self) -> "torch.utils.data.DataLoader":
+    def _load_dataloader(self) -> DataLoader:
         if "dataloader" in self.metadata.supported_formats:
             raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
 
@@ -183,34 +184,6 @@ def to_dict(meta: DatasetMetadata, list_keys: list[str] | None = None) -> dict[s
         assert all(k in meta.keys() for k in list_keys)
     return {k: meta.get(k) for k in list_keys}
 
-# Runtime imports are deferred to keep optional dependencies optional at runtime
-def _import_pandas():
-    try:
-        import pandas as pd
-    except ImportError as exc:
-        raise MissingDependencyError("pandas is required to load format 'pandas'") from exc
-    return pd
-
-def _import_numpy():
-    try:
-        import numpy as np
-    except ImportError as exc:
-        raise MissingDependencyError("numpy is required to load format 'numpy'") from exc
-    return np
-
-def _import_polars():
-    try:
-        import polars as pl
-    except ImportError as exc:
-        raise MissingDependencyError("polars is required to load format 'polars'") from exc
-    return pl
-
-def _import_torch():
-    try:
-        import torch
-    except ImportError as exc:
-        raise MissingDependencyError("torch is required to load format 'torch' or 'dataloader'") from exc
-    return torch
 
 __all__ = [
     "BaseDataset",

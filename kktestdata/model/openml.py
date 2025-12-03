@@ -1,24 +1,27 @@
 import copy
 from typing import TYPE_CHECKING
+from kklogger import set_logger
+
+from ..base import BaseDataset, DatasetMetadata
+from ..check import check_columns
+from ..utils import detect_label_mapping, apply_label_mapping, get_dependencies
+from ..catalog.openml import OpenMLSpec
+
+# import dependencies if it's ready to use
+pd, np, pl, torch, fetch_openml = get_dependencies(["pd", "np", "pl", "torch", "sklearn.datasets.fetch_openml"])
 if TYPE_CHECKING:
     import pandas as pd
     import numpy as np
     import polars as pl
     import torch
-from sklearn.datasets import fetch_openml
-from kklogger import set_logger
-
-from ..base import BaseDataset, DatasetMetadata
-from ..check import check_columns
-from ..utils import detect_label_mapping, apply_label_mapping
-from ..catalog.openml import OpenMLSpec
+    from sklearn.datasets import fetch_openml
 
 
 LOGGER = set_logger(__name__)
 
 
 class OpenMLDataset(BaseDataset):
-    def _load_pandas(self, strategy: str | None = None) -> "pd.DataFrame":
+    def _load_pandas(self, strategy: str | None = None) -> pd.DataFrame:
         LOGGER.info("START")
         meta = self.metadata
         data = fetch_openml(
@@ -68,7 +71,7 @@ class OpenMLDataset(BaseDataset):
         LOGGER.info("END")
         return df
     
-    def _load_numpy(self, strategy: str | None = None) -> tuple["np.ndarray", "np.ndarray"]:
+    def _load_numpy(self, strategy: str | None = None) -> tuple[np.ndarray, np.ndarray]:
         LOGGER.info("START")
         df    = self._load_pandas(strategy=strategy)
         ndf_x = df[self.metadata.columns_feature].to_numpy()
@@ -76,14 +79,14 @@ class OpenMLDataset(BaseDataset):
         LOGGER.info("END")
         return ndf_x, ndf_y
     
-    def _load_polars(self, strategy: str | None = None) -> "pl.DataFrame":
+    def _load_polars(self, strategy: str | None = None) -> pl.DataFrame:
         LOGGER.info("START")
         df = self._load_pandas(strategy=strategy)
         df = pl.from_dataframe(df)
         LOGGER.info("END")
         return df
 
-    def _load_torch(self, strategy: str | None = None) -> tuple["torch.Tensor", "torch.Tensor"]:
+    def _load_torch(self, strategy: str | None = None) -> tuple[torch.Tensor, torch.Tensor]:
         LOGGER.info("START")
         ndf_x, ndf_y = self._load_numpy(strategy=strategy)
         ndf_x = torch.from_numpy(ndf_x)

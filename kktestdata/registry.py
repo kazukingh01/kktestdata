@@ -3,10 +3,15 @@ import sys
 from inspect import isclass
 from pathlib import Path
 from types import ModuleType
-from typing import Iterable
+from typing import Iterable, TYPE_CHECKING
 from kklogger import set_logger
-import pandas as pd
 from .base import BaseDataset, DatasetError, DatasetMetadata, to_display, to_dict
+from .utils import get_dependencies
+
+# import dependencies if it's ready to use
+pd = get_dependencies(["pd"])
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 LOGGER = set_logger(__name__)

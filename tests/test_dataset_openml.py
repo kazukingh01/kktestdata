@@ -1,6 +1,5 @@
 import argparse
 from sklearn.datasets import fetch_openml
-from kktestdata.catalog.openml import OPENML_SPECS
 
 
 if __name__ == "__main__":
