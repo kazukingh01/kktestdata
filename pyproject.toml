@@ -1,6 +1,6 @@
 [project]
 name = "kktestdata"
-version = "1.0.7"
+version = "1.0.8"
 requires-python = ">= 3.12.2"
 description = "Dataset formatting helpers for evaluation data across pandas/numpy/polars/torch/cv2"
 dependencies = [
@@ -29,6 +29,5 @@ packages = [
     "kktestdata.dataset.openml",
     "kktestdata.dataset.huggingface",
     "kktestdata.catalog",
-    "kktestdata.catalog.huggingface",
     "kktestdata.model",
 ]
