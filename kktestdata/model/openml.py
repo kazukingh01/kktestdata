@@ -104,6 +104,7 @@ def build_openml_metadata(spec: OpenMLSpec, strategy: str | list[str] | None=Non
         supported_formats=("numpy", "pandas", "polars", "torch"),
         supported_task=spec.task,
         n_data=spec.n_data,
+        n_classes=spec.n_classes,
         columns_target=spec.target,
         columns_feature=spec.features,
         columns_is_null={},

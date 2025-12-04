@@ -39,6 +39,7 @@ class DatasetMetadata:
     supported_formats: tuple[str, ...] # pandas, numpy, polars, torch, dataloader
     supported_task: str  # binary | multiclass | regression | rank
     n_data: int | None = None
+    n_classes: int | None = None
     columns_target: str | list[str] | None = None
     columns_feature: list[str] | None = None
     columns_is_null: dict[str | int, bool] | None = None
@@ -100,7 +101,7 @@ class BaseDataset:
 
     def to_display(self, list_keys: list[str] | None = [
         "name", "source_type", "data_type", "supported_formats", "supported_task", 
-        "n_data", "n_target", "n_features", "n_null_columns"
+        "n_data", "n_classes", "n_target", "n_features", "n_null_columns"
     ]) -> str:
         return to_display(self.to_dict(list_keys=list_keys))
 

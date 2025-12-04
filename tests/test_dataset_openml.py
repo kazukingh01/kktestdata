@@ -12,6 +12,7 @@ if __name__ == "__main__":
     else:
         args.version = [None] * len(args.name)
     for name, version in zip(args.name, args.version):
+        print(name)
         if version is not None:
             data = fetch_openml(
                 name=name,
@@ -19,13 +20,13 @@ if __name__ == "__main__":
                 return_X_y=False,
                 as_frame=True,
             )
+            print("version:", version)
         else:
             data = fetch_openml(
                 name=name,
                 return_X_y=False,
                 as_frame=True,
             )
-        print(name)
         print(data.feature_names)
         print(data.target_names)
         print(data.target)

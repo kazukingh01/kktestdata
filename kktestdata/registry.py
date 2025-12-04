@@ -85,7 +85,7 @@ class DatasetRegistry:
             return to_display(self.get_class(name).metadata)
         list_dict = [to_dict(self.get_class(name).metadata, list_keys = [
             "name", "source_type", "data_type", "supported_formats", "supported_task", 
-            "n_data", "n_target", "n_features", "n_null_columns"
+            "n_data", "n_classes", "n_target", "n_features", "n_null_columns"
         ]) for name in self.names()]
         return pd.DataFrame(list_dict).to_string(index=False)
 
