@@ -1,6 +1,6 @@
 [project]
 name = "kktestdata"
-version = "1.0.6"
+version = "1.0.7"
 requires-python = ">= 3.12.2"
 description = "Dataset formatting helpers for evaluation data across pandas/numpy/polars/torch/cv2"
 dependencies = [
@@ -16,6 +16,7 @@ polars = ["polars>=1.15.0"]
 torch = ["torch>=2.0.0"]
 http = ["requests>=2.31.0"]
 sklearn = ['scikit-learn>=1.5.2']
+huggingface = ["datasets>=4.4.0"]
 
 [build-system]
 requires = ["setuptools>=64.0.0", "wheel"]
@@ -26,6 +27,8 @@ packages = [
     "kktestdata",
     "kktestdata.dataset",
     "kktestdata.dataset.openml",
+    "kktestdata.dataset.huggingface",
     "kktestdata.catalog",
+    "kktestdata.catalog.huggingface",
     "kktestdata.model",
 ]

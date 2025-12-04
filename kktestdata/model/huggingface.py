@@ -1,40 +1,38 @@
 from typing import TYPE_CHECKING
 from ..base import BaseDataset, DatasetMetadata
 from ..utils import get_dependencies
-from ..catalog.openml import OpenMLSpec
+from ..catalog.huggingface import HFSpec
 
 # import dependencies if it's ready to use
-pd, np, pl, torch, fetch_openml = get_dependencies(["pd", "np", "pl", "torch", "sklearn.datasets.fetch_openml"])
+pd, np, pl, torch, load_dataset = get_dependencies(["pd", "np", "pl", "torch", "datasets.load_dataset"])
 if TYPE_CHECKING:
     import pandas as pd
     import numpy as np
     import polars as pl
     import torch
-    from sklearn.datasets import fetch_openml
+    from datasets import load_dataset
 
 
-class OpenMLDataset(BaseDataset):
+class HuggingFaceDataset(BaseDataset):
     def _domain_load_pandas(self, strategy: str | None = None) -> pd.DataFrame:
         self.logger.info("START")
-        data = fetch_openml(
-            name=self.metadata.name,
-            version=(self.metadata.source_options or {}).get("version"),
-            target_column=None,
-            return_X_y=False,
-            as_frame=True,
-        )
-        df = data["data"]
+        repo_id     = (self.metadata.source_options or {}).get("repo_id")
+        split       = (self.metadata.source_options or {}).get("split", "train")
+        load_kwargs = (self.metadata.source_options or {}).get("load_kwargs", {})
+        assert isinstance(repo_id, str) and repo_id
+        data = load_dataset(repo_id, split=split, **load_kwargs)
+        df   = data.to_pandas()
         self.logger.info("END")
         return df
-    
+
     def _domain_load_numpy(self, strategy: str | None = None) -> tuple[np.ndarray, np.ndarray]:
         self.logger.info("START")
-        df    = self._load_pandas(strategy=strategy)
+        df = self._load_pandas(strategy=strategy)
         ndf_x = df[self.metadata.columns_feature].to_numpy()
-        ndf_y = df[self.metadata.columns_target ].to_numpy()
+        ndf_y = df[self.metadata.columns_target].to_numpy()
         self.logger.info("END")
         return ndf_x, ndf_y
-    
+
     def _domain_load_polars(self, strategy: str | None = None) -> pl.DataFrame:
         self.logger.info("START")
         df = self._load_pandas(strategy=strategy)
@@ -50,12 +48,17 @@ class OpenMLDataset(BaseDataset):
         self.logger.info("END")
         return ndf_x, ndf_y
 
-def build_openml_metadata(spec: OpenMLSpec, strategy: list[str] | None=None) -> DatasetMetadata:
+
+def build_hf_metadata(spec: HFSpec, strategy: list[str] | None = None) -> DatasetMetadata:
     return DatasetMetadata(
         name=spec.name,
         description=spec.description,
-        source_type="openml",
-        source_options={"version": spec.version,},
+        source_type="huggingface",
+        source_options={
+            "repo_id": spec.repo_id,
+            "split": spec.split,
+            "load_kwargs": spec.load_kwargs or {},
+        },
         data_type="tabular",
         supported_formats=("numpy", "pandas", "polars", "torch"),
         supported_task=spec.task,
@@ -63,6 +66,7 @@ def build_openml_metadata(spec: OpenMLSpec, strategy: list[str] | None=None) -> 
         n_classes=spec.n_classes,
         columns_target=spec.target,
         columns_feature=spec.features,
+        columns_group=spec.group,
         columns_is_null={},
         strategy=strategy,
         label_mapping_target={},

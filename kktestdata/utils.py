@@ -5,7 +5,7 @@ from kklogger import set_logger
 
 
 LOGGER = set_logger(__name__)
-DEPENDENCIES = ["pd", "np", "pl", "torch", "cv", "sklearn"]
+DEPENDENCIES = ["pd", "np", "pl", "torch", "cv", "sklearn", "datasets"]
 
 
 class DummyDataframe:
@@ -101,7 +101,9 @@ def detect_label_mapping(df: pd.DataFrame) -> dict[str, int]:
         if isinstance(df[col].dtypes, pd.CategoricalDtype):
             ret_dict[col] = {x: i for i, x in enumerate(df[col].dtypes.categories)}
         elif df[col].dtype == object:
-            cols  = df[col].unique()
+            cols  = [x for x in df[col].unique() if x is not None and not (isinstance(x, float) and np.isnan(x))]
+            if len(cols) == 0:
+                continue
             regex = re.compile("^(<|>|)[0-9]+$")
             if all([regex.match(x) for x in cols if (not isinstance(x, float) or (isinstance(x, float) and not np.isnan(x)))]):
                 num_first, num_last = None, None

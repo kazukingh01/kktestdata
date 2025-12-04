@@ -11,13 +11,13 @@ if TYPE_CHECKING:
     import torch
 
 
-ALLOWED_SOURCE_TYPES = {"openml"}
+ALLOWED_SOURCE_TYPES = {"openml", "huggingface"}
 ALLOWED_DATA_TYPES = {"tabular", "image", "language"}
 ALLOWED_TASKS = {"binary", "multiclass", "regression", "rank", "multi-regression", "multitask"}
 ALLOWED_FORMATS = {"pandas", "numpy", "polars", "torch", "dataloader"}
 ALLOWED_STRATEGIES_BASE = {"none", "mean", "median"}
 ALLOWED_SPLIT_TYPES = {"train", "test", "valid"}
-OPTION_STRATEGY_PATTERN = re.compile(r"^option\d+$")
+OPTION_STRATEGY_PATTERN = re.compile(r"^v\d+$")
 REVISION_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 TYPE_DATAFRAME  = type[pd.DataFrame] | type[pl.DataFrame]
 TYPE_ARRAY      = type[np.ndarray] | type[torch.Tensor]
@@ -32,10 +32,15 @@ def check_source_type(source_type: str, source_options: Any = None):
         if source_type == "openml":
             assert isinstance(source_options, dict)
             assert all(isinstance(k, str) and k for k in source_options)
-        else:
+        elif source_type == "huggingface":
             assert isinstance(source_options, dict)
-            assert "version" in source_options
-            assert isinstance(source_options["version"], int)
+            assert isinstance(source_options.get("repo_id"), str) and source_options.get("repo_id")
+            if "split" in source_options:
+                assert isinstance(source_options["split"], str) and source_options["split"]
+            if "load_kwargs" in source_options:
+                assert isinstance(source_options["load_kwargs"], dict)
+        else:
+            assert False, f"Invalid source type: {source_type}"
 
 def check_data_type(data_type: str):
     assert isinstance(data_type, str) and data_type
@@ -69,19 +74,14 @@ def check_supported_task(supported_task: str, columns_target: str | list[str] | 
         else:
             assert False
 
-def check_strategy(strategy: str | list[str] | None, instance: Any = None):
+def check_strategy(strategy: list[str] | None, instance: Any = None):
     def _is_valid_strategy(strategy: str) -> bool:
         if strategy in ALLOWED_STRATEGIES_BASE:
             return True
         return bool(OPTION_STRATEGY_PATTERN.match(strategy))
     if strategy is not None:
-        strategy_names: list[str]
-        if isinstance(strategy, str):
-            strategy_names = [strategy]
-        else:
-            assert isinstance(strategy, (list, tuple)) and len(strategy) > 0
-            strategy_names = list(strategy)
-        for strategy_name in strategy_names:
+        assert isinstance(strategy, (list, tuple)) and len(strategy) > 0
+        for strategy_name in strategy:
             assert isinstance(strategy_name, str) and _is_valid_strategy(strategy_name), f"Invalid strategy: {strategy_name}"
             # ensure strategy handler exists while avoiding AttributeError
             if instance is not None:
@@ -114,6 +114,12 @@ def check_columns_feature(columns_feature: list[str], columns_target: str | list
     if columns_target is not None:
         columns_target = check_columns(columns_target, is_allowed_single=True)
         assert all(col not in columns_feature for col in columns_target)
+
+def check_columns_group(columns_group: list[str], columns_feature: list[str] | None = None):
+    check_columns(columns_group, is_allowed_single=False)
+    if columns_feature is not None:
+        check_columns(columns_feature, is_allowed_single=False)
+        assert all(col in columns_feature for col in columns_group)
 
 def check_columns_is_null(columns_is_null: dict[str | int, bool], columns_feature: list[str] | None = None):
     assert isinstance(columns_is_null, dict)
@@ -194,6 +200,13 @@ def check_split_consistency_array(inputs: Any, check_type: TYPE_ARRAY = None) ->
     assert all(isinstance(x, check_type) for x in inputs), f"Invalid inputs type: {[type(x) for x in inputs]}"
     assert len(inputs) in [2,4,6]
     return inputs
+
+def check_split_consistency(inputs: Any, check_type: type[Any] = None) -> list[Any]:
+    assert isinstance(check_type, type) and issubclass(check_type, (CLASS_DATAFRAME, CLASS_ARRAY))
+    if check_type in CLASS_DATAFRAME:
+        return check_split_consistency_dataframe(inputs, check_type=check_type)
+    else:
+        return check_split_consistency_array(inputs, check_type=check_type)    
 
 def check_random_seed(random_seed: int):
     assert isinstance(random_seed, int) and random_seed >= 0
