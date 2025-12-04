@@ -7,6 +7,7 @@ dependencies = [
     'kklogger @ git+https://github.com/kazukingh01/kklogger.git@f6ddcc099da0102a14a62d67bede1b1c30eaf839',
     'requests==2.32.5',
     'openml==0.15.1',
+    'datasets==4.4.1',
 ]
 
 [project.optional-dependencies]
@@ -16,7 +17,6 @@ polars = ["polars>=1.15.0"]
 torch = ["torch>=2.0.0"]
 http = ["requests>=2.31.0"]
 sklearn = ['scikit-learn>=1.5.2']
-huggingface = ["datasets>=4.4.0"]
 
 [build-system]
 requires = ["setuptools>=64.0.0", "wheel"]
