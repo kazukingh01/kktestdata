@@ -6,7 +6,7 @@ from .check import (
     check_source_type, check_data_type, check_strategy, check_supported_formats,
     check_supported_task, check_columns_target, check_columns_feature, check_label_mapping_target,
     check_label_mapping_feature, check_revision, check_cache_root, check_columns_is_null,
-    check_split_type, check_split_consistency, check_columns, check_columns_group
+    check_split_type, check_split_consistency, check_columns, check_column_group
 )
 from .error import (
     DatasetError, UnsupportedFormatError, MissingDependencyError
@@ -49,8 +49,8 @@ class DatasetMetadata:
     n_classes: int | None = None
     columns_target: str | list[str] | None = None
     columns_feature: list[str] | None = None
-    columns_group: list[str] | None = None # group for ranking
     columns_is_null: dict[str | int, bool] | None = None
+    column_group: str | None = None # group for ranking
     strategy: list[str] | None = None
     label_mapping_target:  dict[str | int, int | dict[str, int]] = None # {feature_name | index: {label: index}}
     label_mapping_feature: dict[str | int,       dict[str, int]] = None # {feature_name | index: {label: index}}
@@ -89,7 +89,7 @@ class BaseDataset:
         check_source_type(self.metadata.source_type, source_options=self.metadata.source_options)
         check_data_type(self.metadata.data_type)
         check_supported_formats(self.metadata.supported_formats)
-        check_supported_task(self.metadata.supported_task, columns_target=self.metadata.columns_target)
+        check_supported_task(self.metadata.supported_task, columns_target=self.metadata.columns_target, column_group=self.metadata.column_group)
         check_strategy(self.metadata.strategy, instance=self)
         if self.metadata.columns_target is not None:
             check_columns_target( self.metadata.columns_target)
@@ -97,8 +97,8 @@ class BaseDataset:
             check_columns_feature(self.metadata.columns_feature, columns_target=self.metadata.columns_target)
         if self.metadata.columns_is_null is not None and len(self.metadata.columns_is_null) > 0:
             check_columns_is_null(self.metadata.columns_is_null, columns_feature=self.metadata.columns_feature)
-        if self.metadata.columns_group is not None:
-            check_columns_group(self.metadata.columns_group, columns_feature=self.metadata.columns_feature)
+        if self.metadata.column_group is not None:
+            check_column_group(self.metadata.column_group, columns_feature=self.metadata.columns_feature)
         if self.metadata.label_mapping_target is not None and len(self.metadata.label_mapping_target) > 0:
             check_label_mapping_target( self.metadata.label_mapping_target,  columns_target =self.metadata.columns_target)
         if self.metadata.label_mapping_feature is not None and len(self.metadata.label_mapping_feature) > 0:
@@ -141,6 +141,7 @@ class BaseDataset:
             ins = self._load_dataloader(strategy=strategy)
         else:
             raise UnsupportedFormatError(f"Unsupported format {format}")
+        # split
         if self.metadata.supported_task in ("binary", "multiclass", "rank"):
             if format == "pandas":
                 stratify = ins[self.metadata.columns_target]
@@ -154,13 +155,30 @@ class BaseDataset:
                 stratify = None
         else:
             stratify = None
-        # split
+        if self.metadata.supported_task == "rank" and self.metadata.column_group is not None:
+            if format == "pandas":
+                groups = ins[self.metadata.column_group].to_numpy()
+            elif format == "numpy":
+                groups = ins[0][:, np.argmax(self.metadata.column_group == np.array(self.metadata.columns_feature))]
+            elif format == "polars":
+                groups = ins[self.metadata.column_group].to_numpy()
+            elif format == "torch":
+                groups = ins[0][:, np.argmax(self.metadata.column_group == np.array(self.metadata.columns_feature))]
+            elif format == "dataloader":
+                groups = None
+            if groups is not None:
+                dictwk = {x: i for i, x in enumerate(np.sort(np.unique(groups)))}
+                groups = np.vectorize(lambda x: dictwk[x])(groups)
+        else:
+            groups = None
         check_type = DICT_TYPE_NAME[format]
         ins = check_split_consistency(ins, check_type=check_type)
         ins = split_by_mode_task(
             *ins, check_type=check_type, mode=split_type, task=self.metadata.supported_task,
-            test_size=test_size, valid_size=valid_size, stratify=stratify, seed=self.seed
+            test_size=test_size, valid_size=valid_size, stratify=stratify, groups=groups, seed=self.seed
         )
+        if isinstance(ins, (tuple, list)) and len(ins) == 1:
+            ins = ins[0]
         self.logger.info("END")
         return ins
 

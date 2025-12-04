@@ -54,7 +54,7 @@ def __check_subset(items: tuple[str, ...], allowed_items: set[str]):
 def check_supported_formats(supported_formats: tuple[str, ...]):
     __check_subset(supported_formats, ALLOWED_FORMATS)
 
-def check_supported_task(supported_task: str, columns_target: str | list[str] | None = None):
+def check_supported_task(supported_task: str, columns_target: str | list[str] | None = None, column_group: str | None = None):
     assert isinstance(supported_task, str) and supported_task
     assert supported_task in ALLOWED_TASKS
     if columns_target is not None:
@@ -67,6 +67,7 @@ def check_supported_task(supported_task: str, columns_target: str | list[str] | 
             assert len(columns_target) == 1
         elif supported_task == "rank":
             assert len(columns_target) == 1
+            assert column_group is not None and column_group
         elif supported_task == "multi-regression":
             assert len(columns_target) > 1
         elif supported_task == "multitask":
@@ -115,11 +116,10 @@ def check_columns_feature(columns_feature: list[str], columns_target: str | list
         columns_target = check_columns(columns_target, is_allowed_single=True)
         assert all(col not in columns_feature for col in columns_target)
 
-def check_columns_group(columns_group: list[str], columns_feature: list[str] | None = None):
-    check_columns(columns_group, is_allowed_single=False)
+def check_column_group(column_group: str, columns_feature: list[str] | None = None):
+    assert isinstance(column_group, str) and column_group
     if columns_feature is not None:
-        check_columns(columns_feature, is_allowed_single=False)
-        assert all(col in columns_feature for col in columns_group)
+        assert column_group in columns_feature
 
 def check_columns_is_null(columns_is_null: dict[str | int, bool], columns_feature: list[str] | None = None):
     assert isinstance(columns_is_null, dict)

@@ -12,7 +12,7 @@ class HFSpec:
     n_data: int | None
     description: str
     n_classes: int = 0
-    group: list[str] | None = None
+    group: str | None = None
     load_kwargs: dict | None = None
 
 
@@ -36,7 +36,7 @@ HF_SPECS: tuple[HFSpec, ...] = (
             "exhibition_time",
         ],
         target="rank_web",
-        group=["race_id", ],
+        group="race_id",
         task="rank",
         n_data=667152,
         n_classes=6,

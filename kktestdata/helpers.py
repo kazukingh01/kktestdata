@@ -24,12 +24,13 @@ if TYPE_CHECKING:
 
 
 def train_test_split_any(
-    *inputs: Any, test_size: float, inputs_type: Any = None, stratify: Any = None, seed: int = RANDOM_SEED
+    *inputs: Any, test_size: float, inputs_type: Any = None, stratify: Any = None, groups: np.ndarray | None = None, seed: int = RANDOM_SEED
 ) -> tuple[Any, ...]:
     LOGGER.info("START")
     assert isinstance(inputs, tuple) and len(inputs) in [1, 2]
     assert isinstance(test_size, float) and 0 < test_size < 1
     assert isinstance(inputs_type, type) and issubclass(inputs_type, (CLASS_DATAFRAME, CLASS_ARRAY))
+    assert groups is None or isinstance(groups, np.ndarray) and groups.shape[0] == inputs[0].shape[0]
     check_random_seed(seed)
     if inputs_type == np.ndarray:
         assert all(isinstance(x, np.ndarray) for x in inputs)
@@ -60,8 +61,22 @@ def train_test_split_any(
         raise ValueError(f"Invalid inputs type: {inputs_type}")
 
     ret_value = None
-    indexes   = np.arange(inputs[0].shape[0], dtype=int)
+    if stratify is not None:
+        LOGGER.info("Use stratify to split data.")    
+    if groups is not None:
+        LOGGER.info("Use groups to split data.")    
+        groups  = pd.DataFrame(groups).groupby(0)[0].groups
+        groups  = {i: x for i, x in enumerate(groups.values())}
+        indexes = np.arange(len(groups), dtype=int)
+        if stratify is not None:
+            LOGGER.warning(f"stratify is not supported when groups is set: {stratify}")
+            stratify = None
+    else:
+        indexes = np.arange(inputs[0].shape[0], dtype=int)
     indexes_train, indexes_test = train_test_split(indexes, test_size=test_size, random_state=seed, stratify=stratify)
+    if groups is not None:
+        indexes_train = np.concatenate([groups[i] for i in indexes_train])
+        indexes_test  = np.concatenate([groups[i] for i in indexes_test ])
     if inputs_type == np.ndarray:
         ret_value = (inputs[0][indexes_train], inputs[1][indexes_train], inputs[0][indexes_test], inputs[1][indexes_test], )
     elif inputs_type == torch.Tensor:
@@ -74,8 +89,8 @@ def train_test_split_any(
     return *ret_value, indexes_train
 
 def split_by_mode_task(
-    *inputs: Any, check_type: TYPE_DATAFRAME | TYPE_ARRAY = None, mode: str = "train",
-    task: str = "binary", test_size: float = 0.2, valid_size: float = None, stratify: Any = None, seed: int = RANDOM_SEED
+    *inputs: Any, check_type: TYPE_DATAFRAME | TYPE_ARRAY = None, mode: str = "train", task: str = "binary", 
+    test_size: float = 0.2, valid_size: float = None, stratify: Any = None, groups: Any = None, seed: int = RANDOM_SEED
 ) -> tuple[Any, ...]:
     LOGGER.info("START")
     if check_type in CLASS_DATAFRAME:
@@ -97,11 +112,11 @@ def split_by_mode_task(
         ret_value = inputs
     elif mode == "test":
         if check_type in CLASS_DATAFRAME:
-            data_train, data_test, _ = train_test_split_any(inputs[0], test_size=test_size, inputs_type=check_type, stratify=stratify, seed=seed)
+            data_train, data_test, _ = train_test_split_any(inputs[0], test_size=test_size, inputs_type=check_type, stratify=stratify, groups=groups, seed=seed)
             ret_value = (data_train, data_test, )
         else:
             data_train_X, data_train_y, data_test_X, data_test_y, _ = train_test_split_any(
-                inputs[0], inputs[1], test_size=test_size, inputs_type=check_type, stratify=stratify, seed=seed
+                inputs[0], inputs[1], test_size=test_size, inputs_type=check_type, stratify=stratify, groups=groups, seed=seed
             )
             ret_value = (data_train_X, data_train_y, data_test_X, data_test_y, )
     elif mode == "valid":
@@ -110,26 +125,32 @@ def split_by_mode_task(
             LOGGER.warning(f"valid_size is not set, using test_size: {test_size}")
         assert isinstance(valid_size, float) and 0 < valid_size < 1
         if check_type in CLASS_DATAFRAME:
-            data_train, data_test, indexes = train_test_split_any(inputs[0], test_size=test_size, inputs_type=check_type, stratify=stratify, seed=seed)
+            data_train, data_test, indexes = train_test_split_any(
+                inputs[0], test_size=test_size, inputs_type=check_type, stratify=stratify, groups=groups, seed=seed
+            )
             if stratify is not None:
                 if check_type == pd.DataFrame:
                     stratify = stratify.iloc[indexes]
                 else:
                     stratify = stratify[indexes]
+            if groups is not None:
+                groups = groups[indexes]
             data_train, data_valid, _ = train_test_split_any(
                 data_train, test_size=((inputs[0].shape[0] * valid_size) / data_train.shape[0]), 
-                inputs_type=check_type, stratify=stratify, seed=seed
+                inputs_type=check_type, stratify=stratify, groups=groups, seed=seed
             )
             ret_value = (data_train, data_valid, data_test, )
         else:
             data_train_X, data_train_y, data_test_X, data_test_y, indexes = train_test_split_any(
-                inputs[0], inputs[1], test_size=test_size, inputs_type=check_type, stratify=stratify, seed=seed
+                inputs[0], inputs[1], test_size=test_size, inputs_type=check_type, stratify=stratify, groups=groups, seed=seed
             )
             if stratify is not None:
                 stratify = stratify[indexes]
+            if groups is not None:
+                groups = groups[indexes]
             data_train_X, data_train_y, data_valid_X, data_valid_y, _ = train_test_split_any(
                 data_train_X, data_train_y, test_size=((inputs[0].shape[0] * valid_size) / data_train_X.shape[0]), 
-                inputs_type=check_type, stratify=stratify, seed=seed
+                inputs_type=check_type, stratify=stratify, groups=groups, seed=seed
             )
             ret_value = (data_train_X, data_train_y, data_valid_X, data_valid_y, data_test_X, data_test_y, )
     LOGGER.info("END")

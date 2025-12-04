@@ -17,7 +17,7 @@ class Dataset(HuggingFaceDataset):
     def strategy_v1(self, df: pd.DataFrame) -> pd.DataFrame:
         self.logger.info("Drop 'rank_web' is null")
         columns = df.columns.tolist()
-        df["is_null_rank_web"] = df["rank_web"].isnull()
+        df["is_null_rank_web"] = (df["rank_web"].isnull() | (df["rank_web"] < 1))
         dfwk = df.groupby("race_id").agg({"is_null_rank_web": "max"}).reset_index().rename(columns={"is_null_rank_web": "is_null"})
         df = pd.merge(df, dfwk, how="left", on="race_id")
         df = df.loc[df["is_null"] == False, columns]
