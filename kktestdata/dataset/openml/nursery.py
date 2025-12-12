@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from ...model.openml import OpenMLDataset
+from ...model.openml import OpenMLDataset, DatasetMetadata
 from ...catalog.openml import SPEC_BY_NAME
 from ...model.openml import build_openml_metadata
 from ...utils import get_dependencies
@@ -20,4 +20,10 @@ class Dataset(OpenMLDataset):
         n       = df.shape[0]
         se      = df.groupby(self.metadata.columns_target, observed=True).size()
         classes = se.index[(se >= (n * 0.0001)) & (se >= 3)].tolist() # over 0.01% or >= 3 samples
-        return df.loc[df[self.metadata.columns_target].isin(classes), :].copy()
+        df      = df.loc[df[self.metadata.columns_target].isin(classes), :].copy()
+        from dataclasses import asdict
+        meta    = asdict(self.metadata)
+        meta["n_data"]    = df.shape[0]
+        meta["n_classes"] = len(classes)
+        self.metadata = DatasetMetadata(**meta)
+        return df
