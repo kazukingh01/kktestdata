@@ -49,6 +49,21 @@ class OpenMLDataset(BaseDataset):
         ndf_y = torch.from_numpy(ndf_y)
         self.logger.info("END")
         return ndf_x, ndf_y
+    
+    def strategy_v1(self, df: pd.DataFrame) -> pd.DataFrame:
+        self.logger.info("Drop the classes which has low number of samples")
+        n       = df.shape[0]
+        se      = df.groupby(self.metadata.columns_target, observed=True).size()
+        classes = se.index[(se >= (n * 0.0001)) & (se >= 3)].tolist() # over 0.01% or >= 3 samples
+        df      = df.loc[df[self.metadata.columns_target].isin(classes), :].copy()
+        if isinstance(df[self.metadata.columns_target].dtypes, pd.CategoricalDtype):
+            df[self.metadata.columns_target] = df[self.metadata.columns_target].astype(pd.CategoricalDtype(categories=classes, ordered=True))
+        from dataclasses import asdict
+        meta    = asdict(self.metadata)
+        meta["n_data"]    = df.shape[0]
+        meta["n_classes"] = len(classes)
+        self.metadata = DatasetMetadata(**meta)
+        return df
 
 def build_openml_metadata(spec: OpenMLSpec, strategy: list[str] | None=None) -> DatasetMetadata:
     return DatasetMetadata(
