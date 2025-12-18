@@ -184,6 +184,9 @@ class BaseDataset:
 
     @final
     def _load_pandas(self, strategy: str | None = None) -> TypeLoadPandas:
+        """
+        strategy must run through in '_load_pandas' for now.
+        """
         if "pandas" in self.metadata.supported_formats:
             self.logger.info("START")
             df = self._domain_load_pandas(strategy=strategy)
@@ -226,7 +229,7 @@ class BaseDataset:
     def _load_polars(self, strategy: str | None = None) -> TypeLoadPolars:
         if "polars" in self.metadata.supported_formats:
             self.logger.info("START")
-            ins = self._domain_load_polars()
+            ins = self._domain_load_polars(strategy=strategy)
             self.logger.info("END")
             return ins
         else:
