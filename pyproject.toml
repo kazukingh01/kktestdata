@@ -1,11 +1,11 @@
 [project]
 name = "kktestdata"
-version = "1.0.14"
+version = "1.0.15"
 requires-python = ">= 3.12.2"
 description = "Dataset formatting helpers for evaluation data across pandas/numpy/polars/torch/cv2"
 dependencies = [
     'kklogger @ git+https://github.com/kazukingh01/kklogger.git@f6ddcc099da0102a14a62d67bede1b1c30eaf839',
-    'requests==2.32.5',
+    'requests>=2.32.0',
     'openml==0.15.1',
     'datasets==4.4.1',
 ]
@@ -15,7 +15,6 @@ numpy = ["numpy>=2.2.0"]
 pandas = ["pandas>=2.2.0"]
 polars = ["polars>=1.15.0"]
 torch = ["torch>=2.0.0"]
-http = ["requests>=2.31.0"]
 sklearn = ['scikit-learn>=1.5.2']
 
 [build-system]
