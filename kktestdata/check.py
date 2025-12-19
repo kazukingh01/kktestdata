@@ -35,8 +35,10 @@ def check_source_type(source_type: str, source_options: Any = None):
         elif source_type == "huggingface":
             assert isinstance(source_options, dict)
             assert isinstance(source_options.get("repo_id"), str) and source_options.get("repo_id")
-            if "split" in source_options:
+            if "split" in source_options and source_options["split"] is not None:
                 assert isinstance(source_options["split"], str) and source_options["split"]
+            if "filename" in source_options and source_options["filename"] is not None:
+                assert isinstance(source_options["filename"], str) and source_options["filename"]
             if "load_kwargs" in source_options:
                 assert isinstance(source_options["load_kwargs"], dict)
         else:

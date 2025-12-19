@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Any
 from ..base import BaseDataset, DatasetMetadata
 from ..utils import get_dependencies
 from ..catalog.openml import OpenMLSpec
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class OpenMLDataset(BaseDataset):
-    def _domain_load_pandas(self, strategy: str | None = None) -> pd.DataFrame:
+    def _domain_load_pandas(self, strategy: Callable[Any, Any] | None = None) -> pd.DataFrame:
         self.logger.info("START")
         data = fetch_openml(
             name=self.metadata.name,
@@ -26,29 +26,33 @@ class OpenMLDataset(BaseDataset):
         df = data["data"]
         self.logger.info("END")
         return df
+    _domain_load_pandas.is_post_proc = True
     
-    def _domain_load_numpy(self, strategy: str | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def _domain_load_numpy(self, strategy: Callable[Any, Any] | None = None) -> tuple[np.ndarray, np.ndarray]:
         self.logger.info("START")
         df    = self._load_pandas(strategy=strategy)
         ndf_x = df[self.metadata.columns_feature].to_numpy()
         ndf_y = df[self.metadata.columns_target ].to_numpy()
         self.logger.info("END")
         return ndf_x, ndf_y
+    _domain_load_numpy.is_post_proc = False
     
-    def _domain_load_polars(self, strategy: str | None = None) -> pl.DataFrame:
+    def _domain_load_polars(self, strategy: Callable[Any, Any] | None = None) -> pl.DataFrame:
         self.logger.info("START")
         df = self._load_pandas(strategy=strategy)
         df = pl.from_dataframe(df)
         self.logger.info("END")
         return df
+    _domain_load_polars.is_post_proc = False
 
-    def _domain_load_torch(self, strategy: str | None = None) -> tuple[torch.Tensor, torch.Tensor]:
+    def _domain_load_torch(self, strategy: Callable[Any, Any] | None = None) -> tuple[torch.Tensor, torch.Tensor]:
         self.logger.info("START")
         ndf_x, ndf_y = self._domain_load_numpy(strategy=strategy)
         ndf_x = torch.from_numpy(ndf_x)
         ndf_y = torch.from_numpy(ndf_y)
         self.logger.info("END")
         return ndf_x, ndf_y
+    _domain_load_torch.is_post_proc = False
     
     def strategy_v1(self, df: pd.DataFrame) -> pd.DataFrame:
         self.logger.info("Drop the classes which has low number of samples")
@@ -64,6 +68,8 @@ class OpenMLDataset(BaseDataset):
         meta["n_classes"] = len(classes)
         self.metadata = DatasetMetadata(**meta)
         return df
+    strategy_v1.target = "pandas"
+
 
 def build_openml_metadata(spec: OpenMLSpec, strategy: list[str] | None=None) -> DatasetMetadata:
     return DatasetMetadata(

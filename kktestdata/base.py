@@ -1,6 +1,6 @@
 import copy, random
 from dataclasses import dataclass, asdict
-from typing import Any, TYPE_CHECKING, final
+from typing import Any, TYPE_CHECKING, final, Callable
 from kklogger import set_logger
 from .check import (
     check_source_type, check_data_type, check_strategy, check_supported_formats,
@@ -127,8 +127,17 @@ class BaseDataset:
         assert format in self.metadata.supported_formats
         check_split_type(split_type)
         self.set_random_seed()
+        # set strategy
         if strategy is None and self.metadata.strategy is not None and len(self.metadata.strategy) > 0:
+            ## strategy は特定の、例えば pandas だけで組まれていて、_load_numpy は _load_pandas を経由している可能性があるため、内部で呼び出してやる必要がある
             strategy = self.metadata.strategy[0]
+        if strategy is not None:
+            assert strategy in self.metadata.strategy
+            self.logger.info("set strategy %s", strategy)
+            strategy = getattr(self, f"strategy_{strategy}")
+            assert getattr(strategy, "target", None) is not None
+            check_supported_formats((getattr(strategy, "target"), ))
+        # load data
         if format == "pandas":
             ins = self._load_pandas(strategy=strategy)
         elif format == "numpy":
@@ -183,40 +192,49 @@ class BaseDataset:
         return ins
 
     @final
-    def _load_pandas(self, strategy: str | None = None) -> TypeLoadPandas:
-        """
-        strategy must run through in '_load_pandas' for now.
-        """
+    def _load_pandas(self, strategy: Callable[Any, Any] | None = None) -> TypeLoadPandas:
         if "pandas" in self.metadata.supported_formats:
             self.logger.info("START")
-            df = self._domain_load_pandas(strategy=strategy)
-            check_for_pandas(self.metadata, df)
-            df = df.loc[:, list(self.metadata.columns_feature) + check_columns(self.metadata.columns_target, is_allowed_single=True)]
-            # apply strategy
-            if strategy is not None:
-                assert strategy in self.metadata.strategy
-                self.logger.info("Applying strategy %s", strategy)
-                df = getattr(self, f"strategy_{strategy}")(df)
-                assert isinstance(df, pd.DataFrame)
-            # check columns is null
-            self.metadata = create_columns_is_null(self.metadata, df)
-            # auto detect label mapping
-            self.metadata = create_label_mapping_from_dataframe(self.metadata, df)
-            # apply label mapping
-            df = apply_label_mapping_to_dataframe(self.metadata, df)
+            is_post_proc = getattr(self._domain_load_pandas, "is_post_proc", None)
+            assert isinstance(is_post_proc, bool)
+            ins = self._domain_load_pandas(strategy=strategy)
+            check_for_pandas(self.metadata, ins)
+            if strategy is not None and getattr(strategy, "target", None) == "pandas":
+                self.logger.info("Applying strategy %s", strategy.__name__)
+                ins = strategy(ins)
+                check_for_pandas(self.metadata, ins)
+            if is_post_proc:
+                # check columns is null
+                self.metadata = create_columns_is_null(self.metadata, ins, is_polars=False)
+                # auto detect label mapping
+                self.metadata = create_label_mapping_from_dataframe(self.metadata, ins)
+                # apply label mapping
+                ins = apply_label_mapping_to_dataframe(self.metadata, ins)
+            # select columns
+            ins = ins.loc[:, list(self.metadata.columns_feature) + check_columns(self.metadata.columns_target, is_allowed_single=True)]
             self.logger.info("END")
-            return df
+            return ins
         else:
             raise UnsupportedFormatError(f"Unsupported format {self.metadata.supported_formats}")
     
     def _domain_load_pandas(self) -> pd.DataFrame:
         raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
+    _domain_load_pandas.is_post_proc = None
     
     @final
-    def _load_numpy(self, strategy: str | None = None) -> TypeLoadNumpy:
+    def _load_numpy(self, strategy: Callable[Any, Any] | None = None) -> TypeLoadNumpy:
         if "numpy" in self.metadata.supported_formats:
             self.logger.info("START")
+            is_post_proc = getattr(self._domain_load_numpy, "is_post_proc", None)
+            assert isinstance(is_post_proc, bool)
             ins = self._domain_load_numpy(strategy=strategy)
+            check_split_consistency(ins, check_type=np.ndarray)
+            assert len(ins) == 2
+            if strategy is not None and getattr(strategy, "target", None) == "numpy":
+                self.logger.info("Applying strategy %s", strategy.__name__)
+                ins = strategy(ins)
+                check_split_consistency(ins, check_type=np.ndarray)
+                assert len(ins) == 2
             self.logger.info("END")
             return ins
         else:
@@ -224,12 +242,23 @@ class BaseDataset:
     
     def _domain_load_numpy(self) -> tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
+    _domain_load_numpy.is_post_proc = None
     
     @final
-    def _load_polars(self, strategy: str | None = None) -> TypeLoadPolars:
+    def _load_polars(self, strategy: Callable[Any, Any] | None = None) -> TypeLoadPolars:
         if "polars" in self.metadata.supported_formats:
             self.logger.info("START")
+            is_post_proc = getattr(self._domain_load_polars, "is_post_proc", None)
+            assert isinstance(is_post_proc, bool)
             ins = self._domain_load_polars(strategy=strategy)
+            check_for_polars(self.metadata, ins)
+            if strategy is not None and getattr(strategy, "target", None) == "polars":
+                self.logger.info("Applying strategy %s", strategy.__name__)
+                ins = strategy(ins)
+                check_for_polars(self.metadata, ins)
+            if is_post_proc:
+                # check columns is null
+                self.metadata = create_columns_is_null(self.metadata, ins, is_polars=True)
             self.logger.info("END")
             return ins
         else:
@@ -237,12 +266,22 @@ class BaseDataset:
     
     def _domain_load_polars(self) -> pl.DataFrame:
         raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
+    _domain_load_polars.is_post_proc = None
     
     @final
-    def _load_torch(self, strategy: str | None = None) -> TypeLoadTorch:
+    def _load_torch(self, strategy: Callable[Any, Any] | None = None) -> TypeLoadTorch:
         if "torch" in self.metadata.supported_formats:
             self.logger.info("START")
+            is_post_proc = getattr(self._domain_load_torch, "is_post_proc", None)
+            assert isinstance(is_post_proc, bool)
             ins = self._domain_load_torch(strategy=strategy)
+            check_split_consistency(ins, check_type=torch.Tensor)
+            assert len(ins) == 2
+            if strategy is not None and getattr(strategy, "target", None) == "torch":
+                self.logger.info("Applying strategy %s", strategy.__name__)
+                ins = strategy(ins)
+                check_split_consistency(ins, check_type=torch.Tensor)
+                assert len(ins) == 2
             self.logger.info("END")
             return ins
         else:
@@ -250,13 +289,20 @@ class BaseDataset:
     
     def _domain_load_torch(self) -> tuple[torch.Tensor, torch.Tensor]:
         raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
+    _domain_load_torch.is_post_proc = None
     
     @final
-    def _load_dataloader(self, strategy: str | None = None) -> TypeLoadDataloader:
+    def _load_dataloader(self, strategy: Callable[Any, Any] | None = None) -> TypeLoadDataloader:
         if "dataloader" in self.metadata.supported_formats:
             self.logger.info("START")
+            is_post_proc = getattr(self._domain_load_dataloader, "is_post_proc", None)
+            assert isinstance(is_post_proc, bool)
             ins = self._domain_load_dataloader(strategy=strategy)
             assert isinstance(ins, DataLoader)
+            if strategy is not None and getattr(strategy, "target", None) == "dataloader":
+                self.logger.info("Applying strategy %s", strategy.__name__)
+                ins = strategy(ins)
+                assert isinstance(ins, DataLoader)
             self.logger.info("END")
             return ins
         else:
@@ -264,7 +310,8 @@ class BaseDataset:
     
     def _domain_load_dataloader(self) -> DataLoader:
         raise NotImplementedError(f"{self.__class__.__name__} is not implemented")
-    
+    _domain_load_dataloader.is_post_proc = None
+
 def to_dict(meta: DatasetMetadata, list_keys: list[str] | None = None) -> dict[str, Any]:
     assert isinstance(meta, DatasetMetadata)
     meta = asdict(meta)
@@ -281,12 +328,28 @@ def to_dict(meta: DatasetMetadata, list_keys: list[str] | None = None) -> dict[s
     return {k: meta.get(k) for k in list_keys}
 
 def check_for_pandas(meta: DatasetMetadata, df: pd.DataFrame):
+    # this check is including about metadata. so it's defined here
     assert isinstance(meta, DatasetMetadata)
     assert isinstance(df, pd.DataFrame)
     assert meta.columns_feature is not None
     assert meta.columns_target  is not None
-    assert all(isinstance(x, str) and x in df.columns for x in meta.columns_feature), \
+    assert all(isinstance(x, str) and x in df.columns.tolist() for x in meta.columns_feature), \
         f"columns_feature: {meta.columns_feature} not in {df.columns.tolist()}"
+    columns_target = [meta.columns_target, ] if isinstance(meta.columns_target, str) else meta.columns_target
+    assert all(isinstance(x, str) and x in df.columns.tolist() for x in columns_target), \
+        f"columns_target: {columns_target} not in {df.columns.tolist()}"
+
+def check_for_polars(meta: DatasetMetadata, df: pl.DataFrame):
+    # this check is including about metadata. so it's defined here
+    assert isinstance(meta, DatasetMetadata)
+    assert isinstance(df, pl.DataFrame)
+    assert meta.columns_feature is not None
+    assert meta.columns_target  is not None
+    assert all(isinstance(x, str) and x in df.columns for x in meta.columns_feature), \
+        f"columns_feature: {meta.columns_feature} not in {df.columns}"
+    columns_target = [meta.columns_target, ] if isinstance(meta.columns_target, str) else meta.columns_target
+    assert all(isinstance(x, str) and x in df.columns for x in columns_target), \
+        f"columns_target: {columns_target} not in {df.columns}"
 
 def create_label_mapping_from_dataframe(meta: DatasetMetadata, df: pd.DataFrame) -> DatasetMetadata:
     assert isinstance(meta, DatasetMetadata)
@@ -320,12 +383,21 @@ def apply_label_mapping_to_dataframe(meta: DatasetMetadata, df: pd.DataFrame) ->
         df = apply_label_mapping(df, meta.label_mapping_feature)
     return df
 
-def create_columns_is_null(meta: DatasetMetadata, df: pd.DataFrame) -> DatasetMetadata:
+def create_columns_is_null(meta: DatasetMetadata, df: pd.DataFrame | pl.DataFrame, is_polars: bool = False) -> DatasetMetadata:
     assert isinstance(meta, DatasetMetadata)
-    assert isinstance(df, pd.DataFrame)
+    assert isinstance(is_polars, bool)
+    if is_polars:
+        assert isinstance(df, pl.DataFrame)
+    else:
+        assert isinstance(df, pd.DataFrame)
     meta = copy.deepcopy(meta)
-    for col in meta.columns_feature:
-        meta.columns_is_null[col] = bool(df[col].isnull().any())
+    if is_polars:
+        dictwk = df.fill_nan(None).with_columns(pl.all().is_null()).select(pl.all().max()).to_dicts()[0]
+        for col in meta.columns_feature:
+            meta.columns_is_null[col] = bool(dictwk[col])
+    else:
+        for col in meta.columns_feature:
+            meta.columns_is_null[col] = bool(df[col].isnull().any())
     return meta
 
 __all__ = [

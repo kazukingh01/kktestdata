@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from ...model.huggingface import HuggingFaceDataset, build_hf_metadata
+from ...model.huggingface import HuggingFaceDatasetPandas, build_hf_metadata
 from ...catalog.huggingface import SPEC_BY_NAME
 from ...utils import get_dependencies
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 DATASET_NAME = "boatrace_2020_2021"
 
 
-class Dataset(HuggingFaceDataset):
+class Dataset(HuggingFaceDatasetPandas):
     metadata = build_hf_metadata(SPEC_BY_NAME[DATASET_NAME], strategy=["v1"])
 
     def strategy_v1(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -23,3 +23,5 @@ class Dataset(HuggingFaceDataset):
         df = df.loc[df["is_null"] == False, columns]
         df["rank_web"] = df["rank_web"].astype(int)
         return df.copy()
+    
+    strategy_v1.target = "pandas"

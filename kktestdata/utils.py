@@ -5,7 +5,7 @@ from kklogger import set_logger
 
 
 LOGGER = set_logger(__name__)
-DEPENDENCIES = ["pd", "np", "pl", "torch", "cv", "sklearn", "datasets"]
+DEPENDENCIES = ["pd", "np", "pl", "torch", "cv", "sklearn", "datasets", "huggingface_hub"]
 
 
 class DummyDataframe:
