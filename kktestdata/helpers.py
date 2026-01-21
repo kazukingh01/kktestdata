@@ -49,20 +49,23 @@ def train_test_split_any(
         assert all(isinstance(x, pd.DataFrame) for x in inputs)
         assert len(inputs) == 1
         if stratify is not None:
-            assert isinstance(stratify, pd.Series) and stratify.shape[0] == inputs[0].shape[0]
+            assert isinstance(stratify, (pd.Series, pd.DataFrame)) and stratify.shape[0] == inputs[0].shape[0]
             stratify = stratify.to_numpy()
     elif inputs_type == pl.DataFrame:
         assert all(isinstance(x, pl.DataFrame) for x in inputs)
         assert len(inputs) == 1
         if stratify is not None:
-            assert isinstance(stratify, pl.Series) and stratify.shape[0] == inputs[0].shape[0]
+            assert isinstance(stratify, (pl.Series, pl.DataFrame)) and stratify.shape[0] == inputs[0].shape[0]
             stratify = stratify.to_numpy()
     else:
         raise ValueError(f"Invalid inputs type: {inputs_type}")
 
     ret_value = None
     if stratify is not None:
-        LOGGER.info("Use stratify to split data.")    
+        LOGGER.info("Use stratify to split data.")
+        if len(stratify.shape) >= 2:
+            LOGGER.info(f"stratify is multi-dimensional array, use first dimension to split data. {stratify.shape}")
+            stratify = stratify[::, 0]
     if groups is not None:
         LOGGER.info("Use groups to split data.")    
         groups  = pd.DataFrame(groups).groupby(0)[0].groups

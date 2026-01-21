@@ -120,8 +120,8 @@ class BaseDataset:
         strategy: str | None = None
     ) -> Any:
         self.logger.info("START")
-        assert format is None or isinstance(format, str) and format
-        assert strategy is None or isinstance(strategy, str) and strategy
+        assert format   is None or (isinstance(format,   str) and format)
+        assert strategy is None or (isinstance(strategy, str) and strategy)
         if format is None:
             format = self.metadata.supported_formats[0]
         assert format in self.metadata.supported_formats

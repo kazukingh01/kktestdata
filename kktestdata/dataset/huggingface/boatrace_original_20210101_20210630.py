@@ -17,7 +17,7 @@ DATASET_NAME = "boatrace_original_20210101_20210630"
 
 
 class Dataset(HuggingFaceDatasetPolars):
-    metadata = build_hf_metadata(SPEC_BY_NAME[DATASET_NAME], strategy=["v3", "v1", "v2", ])
+    metadata = build_hf_metadata(SPEC_BY_NAME[DATASET_NAME], strategy=["v3", "v1", "v2", "v4"])
 
     def strategy_v1(self, df: pl.DataFrame) -> pl.DataFrame:
         self.logger.info("Create 1 rentan target")
@@ -63,3 +63,16 @@ class Dataset(HuggingFaceDatasetPolars):
         self.metadata = DatasetMetadata(**meta)
         return df
     strategy_v3.target = "polars"
+
+    def strategy_v4(self, df: pl.DataFrame) -> pl.DataFrame:
+        self.logger.info("Create 1 query 6 rank data")
+        assert isinstance(df, pl.DataFrame)
+        df = df.with_columns(pl.col("is_allboat_goal").cast(bool)).filter(pl.col("is_allboat_goal"))
+        df = df.with_columns([pl.col(f"place{i}").cast(int) for i in range(1,7)])
+        meta = asdict(self.metadata)
+        meta["n_data"]    = df.shape[0]
+        meta["n_classes"] = 6
+        meta["columns_target"] = [f"place{i}" for i in range(1,7)]
+        self.metadata = DatasetMetadata(**meta)
+        return df
+    strategy_v4.target = "polars"

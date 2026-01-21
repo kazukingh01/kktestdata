@@ -7,4 +7,4 @@ DATASET_NAME = "boatrace_original_20210701_20211230"
 
 
 class Dataset(Dataset1):
-    metadata = build_hf_metadata(SPEC_BY_NAME[DATASET_NAME], strategy=["v3", "v1", "v2", ])
+    metadata = build_hf_metadata(SPEC_BY_NAME[DATASET_NAME], strategy=["v3", "v1", "v2", "v4"])
